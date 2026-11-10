@@ -1,6 +1,6 @@
 # ADR-0003: Control de concurrencia en la compra y responsable del aforo
 
-**Estado:** Propuesto
+**Estado:** Aceptado
 **Fecha:** 2026-11-09
 **Decisores:** Carlos Vargas, David Murcia, Karol Esquivel
 **Responsable:** Carlos Vargas

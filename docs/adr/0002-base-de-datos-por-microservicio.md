@@ -1,6 +1,6 @@
 # ADR-0002: Una base de datos por microservicio
 
-**Estado:** Propuesto
+**Estado:** Aceptado
 **Fecha:** 2026-11-09
 **Decisores:** Carlos Vargas, David Murcia, Karol Esquivel
 **Responsable:** David Murcia
