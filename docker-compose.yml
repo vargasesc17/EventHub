@@ -1,0 +1,53 @@
+# Ambiente local de EventHub (#8)
+# Levantar:  docker compose up -d
+# Apagar:    docker compose down        (agrega -v para borrar también los datos)
+#
+# Por ahora solo trae la infraestructura (RabbitMQ y PostgreSQL).
+# Los microservicios y el frontend se agregan en sus propios issues (#16-#18, #38).
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: eventhub-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "5672:5672"     # AMQP: aquí se conectan los microservicios
+      - "15672:15672"   # Panel de administración: http://localhost:15672
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq   # las colas durables sobreviven a un reinicio (ADR-0001)
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16
+    container_name: eventhub-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_ADMIN_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD}
+      # Usuarios y contraseñas de cada servicio; los usa el script de init
+      EVENTOS_DB_USER: ${EVENTOS_DB_USER}
+      EVENTOS_DB_PASSWORD: ${EVENTOS_DB_PASSWORD}
+      BOLETERIA_DB_USER: ${BOLETERIA_DB_USER}
+      BOLETERIA_DB_PASSWORD: ${BOLETERIA_DB_PASSWORD}
+      NOTIFICACIONES_DB_USER: ${NOTIFICACIONES_DB_USER}
+      NOTIFICACIONES_DB_PASSWORD: ${NOTIFICACIONES_DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Crea eventos_db, boleteria_db y notificaciones_db la primera vez (ADR-0002)
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_ADMIN_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  rabbitmq_data:
+  postgres_data:

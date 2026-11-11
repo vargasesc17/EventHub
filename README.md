@@ -17,4 +17,22 @@ Sistema de gestión de eventos y boletería basado en microservicios (Eventos, B
 
 Todo cambio entra a `main` por pull request con al menos una aprobación. Ramas, commits y revisión: ver [CONTRIBUTING.md](CONTRIBUTING.md).
 
-> La guía de ejecución con `docker-compose` se agrega en #30.
+## Levantar la infraestructura local
+
+Necesitas [Docker Desktop](https://www.docker.com/products/docker-desktop/) abierto.
+
+```bash
+cp .env.example .env        # en Windows (PowerShell): copy .env.example .env
+docker compose up -d
+docker compose ps           # rabbitmq y postgres deben decir "healthy"
+```
+
+| Servicio | Dirección | Usuario / contraseña |
+|---|---|---|
+| Panel de RabbitMQ | http://localhost:15672 | `RABBITMQ_USER` / `RABBITMQ_PASSWORD` del `.env` |
+| RabbitMQ (AMQP, para los servicios) | `localhost:5672` | igual que arriba |
+| PostgreSQL | `localhost:5432` | Un usuario por base: `eventos_db`, `boleteria_db`, `notificaciones_db` (ver `.env`) |
+
+Para apagar: `docker compose down`. Para borrar también los datos y empezar de cero: `docker compose down -v`.
+
+> La guía completa de ejecución (microservicios, frontend y demo) se agrega en #30.
