@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vargasesc17/EventHub/docs/contratos/boleta.comprada.schema.json",
+  "title": "boleta.comprada",
+  "description": "Publica Boletería al confirmar el pago de una boleta. Consume Notificaciones (#25, ADR-0006).",
+  "type": "object",
+  "required": [
+    "messageId",
+    "tipo",
+    "version",
+    "fechaEmision",
+    "origen",
+    "datos"
+  ],
+  "properties": {
+    "messageId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "ID único del mensaje; el consumidor lo usa para ignorar duplicados"
+    },
+    "tipo": {
+      "const": "boleta.comprada"
+    },
+    "version": {
+      "const": 1
+    },
+    "fechaEmision": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "origen": {
+      "const": "boleteria"
+    },
+    "datos": {
+      "type": "object",
+      "required": [
+        "boletaId",
+        "eventoId",
+        "categoria",
+        "precioPagado",
+        "fechaCompra",
+        "codigoQr",
+        "comprador",
+        "evento"
+      ],
+      "properties": {
+        "boletaId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventoId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "categoria": {
+          "type": "string",
+          "enum": [
+            "GENERAL",
+            "VIP",
+            "ESTUDIANTE",
+            "CORTESIA"
+          ]
+        },
+        "precioPagado": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "COP, sin decimales"
+        },
+        "fechaCompra": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "codigoQr": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F-]{36}\\.[A-Za-z0-9_-]+$",
+          "description": "<boletaId>.<firma HMAC> (ADR-0004)"
+        },
+        "comprador": {
+          "type": "object",
+          "required": [
+            "compradorId",
+            "nombre",
+            "correo"
+          ],
+          "properties": {
+            "compradorId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nombre": {
+              "type": "string",
+              "minLength": 1
+            },
+            "correo": {
+              "type": "string",
+              "format": "email"
+            }
+          }
+        },
+        "evento": {
+          "type": "object",
+          "required": [
+            "nombre",
+            "fechaInicio",
+            "lugar"
+          ],
+          "properties": {
+            "nombre": {
+              "type": "string",
+              "minLength": 1
+            },
+            "fechaInicio": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "lugar": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

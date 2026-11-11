@@ -1,0 +1,19 @@
+{
+  "messageId": "c0ffee00-1234-4abc-9def-56789abcdef0",
+  "tipo": "evento.aforo.critico",
+  "version": 1,
+  "fechaEmision": "2026-11-25T22:10:05Z",
+  "origen": "boleteria",
+  "datos": {
+    "eventoId": "3c1f9d2e-8a4b-4f6c-9e1d-2b7a5c8e0f13",
+    "nombreEvento": "Concierto de fin de semestre",
+    "organizador": {
+      "organizadorId": "a9e2c4b1-6d3f-4a8e-b2c7-1f5d9e3a7c20",
+      "correo": "organizador@eventhub.test"
+    },
+    "aforoMaximo": 500,
+    "vendidas": 451,
+    "porcentajeVendido": 90.2,
+    "umbral": 90
+  }
+}

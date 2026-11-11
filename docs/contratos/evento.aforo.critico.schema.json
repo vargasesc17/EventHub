@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vargasesc17/EventHub/docs/contratos/evento.aforo.critico.schema.json",
+  "title": "evento.aforo.critico",
+  "description": "Publica Boletería una sola vez por evento cuando las vendidas alcanzan o superan el umbral: vendidas * 100 >= aforoMaximo * umbral (ADR-0003). Consume Notificaciones (#26).",
+  "type": "object",
+  "required": [
+    "messageId",
+    "tipo",
+    "version",
+    "fechaEmision",
+    "origen",
+    "datos"
+  ],
+  "properties": {
+    "messageId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "ID único del mensaje; el consumidor lo usa para ignorar duplicados"
+    },
+    "tipo": {
+      "const": "evento.aforo.critico"
+    },
+    "version": {
+      "const": 1
+    },
+    "fechaEmision": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "origen": {
+      "const": "boleteria"
+    },
+    "datos": {
+      "type": "object",
+      "required": [
+        "eventoId",
+        "nombreEvento",
+        "organizador",
+        "aforoMaximo",
+        "vendidas",
+        "porcentajeVendido",
+        "umbral"
+      ],
+      "properties": {
+        "eventoId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "nombreEvento": {
+          "type": "string",
+          "minLength": 1
+        },
+        "organizador": {
+          "type": "object",
+          "required": [
+            "organizadorId",
+            "correo"
+          ],
+          "properties": {
+            "organizadorId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "correo": {
+              "type": "string",
+              "format": "email"
+            }
+          }
+        },
+        "aforoMaximo": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "vendidas": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "porcentajeVendido": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "umbral": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    }
+  }
+}

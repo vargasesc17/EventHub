@@ -1,0 +1,292 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vargasesc17/EventHub/docs/contratos/evento.actualizado.schema.json",
+  "title": "evento.actualizado",
+  "description": "Publica Eventos al publicar, cambiar de fecha o lugar, o cancelar un evento. Consumen Notificaciones (#26) y Boletería (ADR-0003).",
+  "type": "object",
+  "required": [
+    "messageId",
+    "tipo",
+    "version",
+    "fechaEmision",
+    "origen",
+    "datos"
+  ],
+  "properties": {
+    "messageId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "ID único del mensaje; el consumidor lo usa para ignorar duplicados"
+    },
+    "tipo": {
+      "const": "evento.actualizado"
+    },
+    "version": {
+      "const": 1
+    },
+    "fechaEmision": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "origen": {
+      "const": "eventos"
+    },
+    "datos": {
+      "type": "object",
+      "required": [
+        "eventoId",
+        "cambios",
+        "estado",
+        "nombre",
+        "fechaInicio",
+        "lugar",
+        "valoresAnteriores",
+        "aforoMaximo",
+        "organizador",
+        "categorias"
+      ],
+      "properties": {
+        "eventoId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "cambios": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "Qué cambió en esta operación. PUBLICADO y CANCELADO van solos; FECHA, LUGAR e INVENTARIO se pueden combinar.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "PUBLICADO",
+              "FECHA",
+              "LUGAR",
+              "INVENTARIO",
+              "CANCELADO"
+            ]
+          }
+        },
+        "estado": {
+          "type": "string",
+          "enum": [
+            "PUBLICADO",
+            "EN_CURSO",
+            "FINALIZADO",
+            "CANCELADO"
+          ]
+        },
+        "nombre": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fechaInicio": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lugar": {
+          "type": "string",
+          "minLength": 1
+        },
+        "valoresAnteriores": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "fechaInicio": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "lugar": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "aforoMaximo": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "organizador": {
+          "type": "object",
+          "required": [
+            "organizadorId",
+            "correo"
+          ],
+          "properties": {
+            "organizadorId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "correo": {
+              "type": "string",
+              "format": "email"
+            }
+          }
+        },
+        "categorias": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "categoria",
+              "cupos",
+              "precioBase"
+            ],
+            "properties": {
+              "categoria": {
+                "type": "string",
+                "enum": [
+                  "GENERAL",
+                  "VIP",
+                  "ESTUDIANTE",
+                  "CORTESIA"
+                ]
+              },
+              "cupos": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "precioBase": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "cambios"
+            ],
+            "properties": {
+              "cambios": {
+                "contains": {
+                  "const": "PUBLICADO"
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "cambios": {
+                "maxItems": 1
+              },
+              "valoresAnteriores": {
+                "type": "null"
+              },
+              "estado": {
+                "const": "PUBLICADO"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "cambios"
+            ],
+            "properties": {
+              "cambios": {
+                "contains": {
+                  "const": "CANCELADO"
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "cambios": {
+                "maxItems": 1
+              },
+              "valoresAnteriores": {
+                "type": "null"
+              },
+              "estado": {
+                "const": "CANCELADO"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "cambios"
+            ],
+            "properties": {
+              "cambios": {
+                "contains": {
+                  "const": "FECHA"
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "valoresAnteriores": {
+                "type": "object",
+                "required": [
+                  "fechaInicio"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "cambios"
+            ],
+            "properties": {
+              "cambios": {
+                "contains": {
+                  "const": "LUGAR"
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "valoresAnteriores": {
+                "type": "object",
+                "required": [
+                  "lugar"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "cambios"
+            ],
+            "properties": {
+              "cambios": {
+                "not": {
+                  "contains": {
+                    "enum": [
+                      "FECHA",
+                      "LUGAR"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "valoresAnteriores": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ],
+      "description": "Estado completo y actual del evento después del cambio (no la diferencia)."
+    }
+  }
+}
