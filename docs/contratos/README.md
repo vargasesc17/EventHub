@@ -12,7 +12,7 @@ Este documento fija **el formato de los mensajes antes de programar**, para que 
 |---|---|---|---|
 | `boleta.comprada` | Boletería | Notificaciones | Enviar la confirmación con el QR y guardar el comprador en la copia local (RF-04, ADR-0006) |
 | `evento.actualizado` | Eventos | Notificaciones, Boletería | Alertar a los compradores (RF-04); crear o ajustar el inventario en Boletería (ADR-0003) |
-| `evento.aforo.critico` | Boletería | Notificaciones | Alertar al organizador cuando las ventas superan el 90 % (RF-05) |
+| `evento.aforo.critico` | Boletería | Notificaciones | Alertar al organizador cuando las ventas alcanzan o superan el 90 % (RF-05) |
 
 ## Topología
 
@@ -103,33 +103,55 @@ Esquema: [`boleta.comprada.schema.json`](boleta.comprada.schema.json) · Ejemplo
 
 ## 2. `evento.actualizado`
 
-**Publica:** Eventos, cuando un evento se publica, cambia de fecha/hora o de lugar, o se cancela (RF-02).
+**Publica:** Eventos, cuando un evento se publica, cambia de fecha/hora, de lugar o de cupos, o se cancela (RF-02, ADR-0003). Si en una sola operación cambian varias cosas, se publica **un solo mensaje** con todas en `cambios`, para que cada comprador reciba una sola alerta (RF-04: "cada uno una sola vez").
+
+**Valores de `cambios`:**
+
+| Valor | Cuándo | ¿Se combina? |
+|---|---|---|
+| `PUBLICADO` | El evento pasa de borrador a publicado | No: va solo |
+| `FECHA` | Cambia la fecha o la hora | Sí, con `LUGAR` e `INVENTARIO` |
+| `LUGAR` | Cambia el lugar | Sí, con `FECHA` e `INVENTARIO` |
+| `INVENTARIO` | Cambia `aforoMaximo` o los cupos de alguna categoría | Sí, con `FECHA` y `LUGAR` |
+| `CANCELADO` | El evento se cancela | No: va solo |
+
 **Consumen:**
-- **Notificaciones** → alerta a todos los compradores del evento usando su copia local (#26). **Ignora** `tipoCambio = PUBLICADO`, porque un evento recién publicado todavía no tiene compradores.
-- **Boletería** → con `PUBLICADO` crea el inventario por categoría y guarda el aforo máximo y el organizador (ADR-0003); con `CANCELADO` bloquea nuevas ventas.
+- **Notificaciones** → alerta a todos los compradores del evento usando su copia local (#26) si `cambios` incluye `FECHA`, `LUGAR` o `CANCELADO`. **Ignora** los mensajes que solo traen `PUBLICADO` (todavía no hay compradores) o solo `INVENTARIO` (no afecta a quien ya compró). Si cambia `FECHA`, también reprograma el recordatorio de 24 horas.
+- **Boletería** → actúa con `PUBLICADO` (crea el inventario por categoría y guarda el aforo máximo y el organizador), `INVENTARIO` (ajusta el inventario, ver abajo) y `CANCELADO` (bloquea nuevas ventas). Ignora `FECHA` y `LUGAR`.
 
 | Campo de `datos` | Tipo | Descripción |
 |---|---|---|
 | `eventoId` | UUID | ID del evento. |
-| `tipoCambio` | `PUBLICADO` \| `FECHA` \| `LUGAR` \| `CANCELADO` | Qué pasó. `FECHA` incluye cambios de hora. |
-| `estado` | `PUBLICADO` \| `EN_CURSO` \| `FINALIZADO` \| `CANCELADO` | Estado del evento después del cambio. |
+| `cambios` | lista de `PUBLICADO` \| `FECHA` \| `LUGAR` \| `INVENTARIO` \| `CANCELADO` | Qué cambió en esta operación, sin repetidos. `FECHA` incluye cambios de hora. |
+| `estado` | `PUBLICADO` \| `EN_CURSO` \| `FINALIZADO` \| `CANCELADO` | Estado del evento después del cambio. Con `PUBLICADO` debe ser `PUBLICADO`; con `CANCELADO` debe ser `CANCELADO`. |
 | `nombre` | texto | Nombre del evento. |
 | `fechaInicio` | fecha ISO-8601 | Fecha y hora **actuales** (después del cambio). |
 | `lugar` | texto | Lugar **actual**. |
-| `valoresAnteriores` | objeto o `null` | Con `FECHA` trae `fechaInicio` anterior; con `LUGAR` trae `lugar` anterior; en los demás casos es `null`. Sirve para el texto del correo ("cambió del 20 al 22 de noviembre"). |
+| `valoresAnteriores` | objeto o `null` | Trae lo anterior de `FECHA` (`fechaInicio`) y/o de `LUGAR` (`lugar`). Si `cambios` no incluye ninguno de los dos, va en `null`. Sirve para el texto del correo ("cambió del 28 al 30 de noviembre"). |
 | `aforoMaximo` | entero > 0 | Aforo total del evento (ADR-0003). |
 | `organizador.organizadorId` | UUID | ID del organizador. |
 | `organizador.correo` | correo | Boletería lo guarda para incluirlo en `evento.aforo.critico`. |
 | `categorias[]` | lista | Datos del inventario: una entrada por categoría. |
 | `categorias[].categoria` | `GENERAL` \| `VIP` \| `ESTUDIANTE` \| `CORTESIA` | |
-| `categorias[].cupos` | entero ≥ 0 | Cupos totales de la categoría. La suma no supera `aforoMaximo` (lo valida Eventos). |
+| `categorias[].cupos` | entero ≥ 0 | Cupos totales de la categoría. |
 | `categorias[].precioBase` | entero ≥ 0 | Precio base en COP; Boletería aplica la estrategia de precio encima. |
 
-Esquema: [`evento.actualizado.schema.json`](evento.actualizado.schema.json) · Ejemplos: [`ejemplos/evento.actualizado.publicado.json`](ejemplos/evento.actualizado.publicado.json), [`ejemplos/evento.actualizado.fecha.json`](ejemplos/evento.actualizado.fecha.json)
+`aforoMaximo` y `categorias` siempre traen los valores **completos y actuales**, no la diferencia. Igual el resto de campos: cada mensaje describe el estado completo del evento.
+
+**Cómo aplica Boletería un cambio de `INVENTARIO`:**
+- **Sube un cupo:** suma la diferencia a los disponibles.
+- **Baja un cupo:** resta la diferencia sin bajar de 0. Nunca anula boletas vendidas o reservadas.
+- **Categoría nueva:** crea su inventario.
+- **Categoría que desaparece:** sus disponibles quedan en 0 y las boletas ya vendidas siguen siendo válidas.
+- **Cambia `aforoMaximo`:** recalcula el umbral del 90 %. Si la alerta ya se envió, no se reenvía.
+
+Esa protección vive en Boletería porque Eventos no conoce las ventas (ADR-0003).
+
+Esquema: [`evento.actualizado.schema.json`](evento.actualizado.schema.json) · Ejemplos: [`publicado`](ejemplos/evento.actualizado.publicado.json), [`fecha-lugar`](ejemplos/evento.actualizado.fecha-lugar.json), [`inventario`](ejemplos/evento.actualizado.inventario.json)
 
 ## 3. `evento.aforo.critico`
 
-**Publica:** Boletería, en la compra que hace que las boletas vendidas superen el 90 % del aforo. Se publica **una sola vez por evento** (ADR-0003).
+**Publica:** Boletería, en la compra que hace que las boletas vendidas **alcancen o superen** el 90 % del aforo, es decir, cuando `vendidas * 100 >= aforoMaximo * 90` (el mismo `>=` del SQL de ADR-0003). Se publica **una sola vez por evento**.
 **Consume:** Notificaciones → envía la alerta al organizador (#26).
 
 | Campo de `datos` | Tipo | Descripción |
@@ -158,6 +180,7 @@ Estas reglas son las que hacen cumplir el **RNF-02** (la compra funciona aunque 
 | El procesamiento falla (por ejemplo, error al enviar el correo) | Se reintenta **3 veces** con espera de 1 s, 2 s y 4 s. | Reintentos en el consumidor (Spring Retry) |
 | Falla después de los 3 reintentos | Se rechaza sin reencolar y va a su DLQ para revisarlo a mano. No bloquea la cola. | `basicReject(requeue=false)` + `x-dead-letter-exchange` |
 | El JSON no cumple el contrato | Va directo a la DLQ, sin reintentos (reintentar no lo va a arreglar). | Validación al deserializar |
+| Un `evento.actualizado` viejo llega después de uno nuevo (por los reintentos) | Se ignora el viejo. Como cada mensaje trae el estado completo, aplicar solo el más reciente basta. | El consumidor guarda la última `fechaEmision` aplicada por `eventoId` e ignora los mensajes con una `fechaEmision` anterior |
 | El publicador no logra publicar | La operación de negocio ya quedó guardada; el mensaje se pierde. **Riesgo conocido**, se mitiga en el futuro con Transactional Outbox (ADR-0001). | Publisher confirms para al menos registrar el error en el log |
 
 **Prefetch:** cada consumidor usa `prefetch = 10` para no cargar demasiados mensajes en memoria.
@@ -167,10 +190,18 @@ Estas reglas son las que hacen cumplir el **RNF-02** (la compra funciona aunque 
 - **Agregar un campo opcional** no rompe a nadie: se puede hacer sin subir `version`. Los consumidores **deben ignorar los campos que no conocen**.
 - **Quitar o renombrar un campo, o cambiar su tipo** rompe a los consumidores: se sube `version` y se avisa a los dueños de los servicios que consumen el mensaje.
 
-## Preguntas abiertas para la revisión
+## Qué valida el esquema y qué no
 
-1. **Cambio de fecha y lugar al mismo tiempo.** Con `tipoCambio` de un solo valor, Eventos publicaría dos mensajes y el comprador recibiría dos correos. ¿Lo aceptamos así o cambiamos `tipoCambio` por una lista (`["FECHA", "LUGAR"]`)?
-2. **Cancelación de una boleta.** ADR-0006 dice que, si se cancela una boleta, Boletería debe avisar a Notificaciones para que la retire de su copia. No está en el enunciado; propongo dejar `boleta.cancelada` fuera de esta entrega y mencionarlo en la sustentación como mejora.
+JSON Schema revisa cada campo por separado, pero **no compara campos entre sí**. Esas reglas las garantiza el servicio que publica:
+- **Eventos** valida que no haya categorías repetidas y que la suma de `cupos` no supere `aforoMaximo`.
+- **Boletería** garantiza que `vendidas <= aforoMaximo`.
+
+## Decisiones tomadas en la revisión
+
+1. **Varios cambios a la vez → un solo mensaje.** `tipoCambio` pasó a ser la lista `cambios`. Si cambian la fecha y el lugar juntos, Eventos publica un mensaje con `["FECHA", "LUGAR"]` y cada comprador recibe una sola alerta.
+2. **`boleta.cancelada` queda fuera de esta entrega.** Dentro del alcance, ningún flujo cancela una boleta ya pagada. Queda como acción pendiente en [ADR-0006](../adr/0006-replica-de-compradores-en-notificaciones.md) y se menciona en la sustentación como mejora.
+
+**Para #25 y #26 (implementación):** en Spring AMQP hay que poner `defaultRequeueRejected=false` (o lanzar `AmqpRejectAndDontRequeueException`). Si no, un mensaje que falla vuelve a la cola para siempre y nunca llega a la DLQ.
 
 ## Aprobación
 

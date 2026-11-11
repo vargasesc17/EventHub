@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/vargasesc17/EventHub/docs/contratos/evento.aforo.critico.schema.json",
   "title": "evento.aforo.critico",
-  "description": "Publica Boletería una sola vez por evento cuando las vendidas superan el umbral (90 %). Consume Notificaciones (#26, ADR-0003).",
+  "description": "Publica Boletería una sola vez por evento cuando las vendidas alcanzan o superan el umbral: vendidas * 100 >= aforoMaximo * umbral (ADR-0003). Consume Notificaciones (#26).",
   "type": "object",
   "required": [
     "messageId",

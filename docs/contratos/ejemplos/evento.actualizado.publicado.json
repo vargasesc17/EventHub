@@ -6,7 +6,9 @@
   "origen": "eventos",
   "datos": {
     "eventoId": "3c1f9d2e-8a4b-4f6c-9e1d-2b7a5c8e0f13",
-    "tipoCambio": "PUBLICADO",
+    "cambios": [
+      "PUBLICADO"
+    ],
     "estado": "PUBLICADO",
     "nombre": "Concierto de fin de semestre",
     "fechaInicio": "2026-11-28T01:00:00Z",

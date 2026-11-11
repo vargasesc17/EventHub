@@ -70,3 +70,4 @@ Esta decisión depende de que RabbitMQ no pierda mensajes (ADR-0001): colas dura
 3. [ ] Guardar el comprador al consumir `boleta.comprada` (#25).
 4. [ ] Usar la copia local al consumir `evento.actualizado` (#26).
 5. [x] **Agregar este ADR a la lista del issue #13.**
+6. [ ] **Pendiente (fuera de esta entrega):** publicar `boleta.cancelada` desde Boletería para que Notificaciones retire la boleta de su copia. Dentro del alcance actual ningún flujo cancela una boleta ya pagada; se decidió en la revisión de los contratos (#15).
