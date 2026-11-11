@@ -25,7 +25,7 @@ Este documento define los 10 requerimientos del sistema: 6 funcionales (RF) y 4 
 
 ### RF-01: Compra y reserva de boletas
 
-El comprador debe poder comprar y reservar boletas para un evento específico. Las boletas se gestionan por categorías: General, VIP y Estudiante. Una reserva aparta las boletas durante 24 horas; si no se paga en ese plazo, las boletas vuelven al inventario.
+El comprador debe poder comprar y reservar boletas para un evento específico. Las boletas se gestionan por categorías: General, VIP, Cortesía y Estudiante. Una reserva aparta las boletas durante 24 horas; si no se paga en ese plazo, las boletas vuelven al inventario.
 
 **Criterios de aceptación**
 - Una compra pagada crea una boleta en estado `activa` con su categoría y comprador, descuenta 1 del inventario de esa categoría y publica `boleta.comprada`.
@@ -34,12 +34,13 @@ El comprador debe poder comprar y reservar boletas para un evento específico. L
 
 ### RF-02: Creación de eventos y ciclo de vida
 
-El organizador debe poder crear un evento con nombre, lugar, fecha, aforo máximo y categorías con precios diferenciados. También debe poder gestionar el ciclo de vida de sus eventos: borrador, publicado, en curso, finalizado y cancelado.
+El organizador debe poder crear un evento con nombre, lugar, fecha, aforo máximo y categorías con precios diferenciados. También debe poder gestionar el ciclo de vida de sus eventos: borrador, publicado, en curso, finalizado y cancelado. 
 
 **Criterios de aceptación**
 - Un evento nuevo queda en `borrador` y no aparece en el catálogo (RF-06) hasta que se publica.
 - Solo se permiten estas transiciones: borrador → publicado, publicado → en curso, en curso → finalizado, y borrador / publicado → cancelado. Cualquier otra se rechaza.
 - Un cambio de fecha o lugar, o una cancelación, de un evento publicado publica `evento.actualizado`.
+- `evento.actualizado` también se publica al publicar el evento y al cambiar el inventario.
 
 ### RF-03: Check-in con QR de uso único
 
@@ -65,7 +66,7 @@ El organizador debe poder ver el aforo de su evento (boletas vendidas frente al 
 
 **Criterios de aceptación**
 - El organizador ve, por evento y por categoría, las boletas vendidas, las reservadas y las disponibles.
-- Cuando una venta hace que las boletas vendidas superen el 90 % del aforo, Boletería publica `evento.aforo.critico` y el organizador recibe un correo.
+- Cuando una venta hace que las boletas vendidas alcancen o superen el 90 % del aforo, Boletería publica `evento.aforo.critico` y el organizador recibe un correo.
 - La alerta se envía una sola vez por evento, no en cada venta posterior al 90 %.
 
 ### RF-06: Catálogo de eventos disponibles
