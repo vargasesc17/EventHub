@@ -1,6 +1,6 @@
 # ADR-0006: Notificaciones mantiene su propia copia de los compradores por evento
 
-**Estado:** Propuesto
+**Estado:** Aceptado
 **Fecha:** 2026-11-09
 **Decisores:** Carlos Vargas, David Murcia, Karol Esquivel
 **Responsable:** David Murcia (dueño del servicio Notificaciones)

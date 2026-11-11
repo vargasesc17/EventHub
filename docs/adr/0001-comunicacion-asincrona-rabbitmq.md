@@ -1,6 +1,6 @@
 # ADR-0001: Comunicación asíncrona entre microservicios con RabbitMQ
 
-**Estado:** Propuesto
+**Estado:** Aceptado
 **Fecha:** 2026-11-09
 **Decisores:** Carlos Vargas, David Murcia, Karol Esquivel
 **Responsable:** David Murcia

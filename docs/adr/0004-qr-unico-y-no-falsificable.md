@@ -1,6 +1,6 @@
 # ADR-0004: Diseño del código QR único y no falsificable
 
-**Estado:** Propuesto
+**Estado:** Aceptado
 **Fecha:** 2026-11-09
 **Decisores:** Carlos Vargas, David Murcia, Karol Esquivel
 **Responsable:** Carlos Vargas
