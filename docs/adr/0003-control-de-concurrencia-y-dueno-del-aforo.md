@@ -23,7 +23,7 @@ Si cada compra tuviera que preguntarle a Eventos por HTTP si hay cupo, Boleterí
 Se separan dos responsabilidades que el enunciado agrupa bajo "aforo":
 
 1. **Eventos es dueño de la definición del aforo.** Define el aforo máximo y valida al configurar el evento que la suma de cupos de las categorías no lo supere.
-2. **Boletería es dueña del inventario y de la alerta.** Recibe los cupos por categoría al publicarse el evento, controla el descuento de cada compra y, como es quien sabe cuántas boletas se han vendido, **publica `evento.aforo.critico`** cuando las vendidas superan el 90 % del aforo.
+2. **Boletería es dueña del inventario y de la alerta.** Recibe los cupos por categoría al publicarse el evento, controla el descuento de cada compra y, como es quien sabe cuántas boletas se han vendido, **publica `evento.aforo.critico`** cuando las vendidas alcanzan o superan el 90 % del aforo.
 
 El control de concurrencia se hace con una **actualización condicional atómica** en PostgreSQL:
 
