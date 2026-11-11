@@ -1,0 +1,40 @@
+{
+  "messageId": "9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a",
+  "tipo": "evento.actualizado",
+  "version": 1,
+  "fechaEmision": "2026-11-20T16:45:00Z",
+  "origen": "eventos",
+  "datos": {
+    "eventoId": "3c1f9d2e-8a4b-4f6c-9e1d-2b7a5c8e0f13",
+    "tipoCambio": "FECHA",
+    "estado": "PUBLICADO",
+    "nombre": "Concierto de fin de semestre",
+    "fechaInicio": "2026-11-30T01:00:00Z",
+    "lugar": "Auditorio principal, Chía",
+    "valoresAnteriores": {
+      "fechaInicio": "2026-11-28T01:00:00Z"
+    },
+    "aforoMaximo": 500,
+    "organizador": {
+      "organizadorId": "a9e2c4b1-6d3f-4a8e-b2c7-1f5d9e3a7c20",
+      "correo": "organizador@eventhub.test"
+    },
+    "categorias": [
+      {
+        "categoria": "GENERAL",
+        "cupos": 400,
+        "precioBase": 80000
+      },
+      {
+        "categoria": "VIP",
+        "cupos": 50,
+        "precioBase": 250000
+      },
+      {
+        "categoria": "ESTUDIANTE",
+        "cupos": 50,
+        "precioBase": 50000
+      }
+    ]
+  }
+}

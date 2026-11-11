@@ -1,0 +1,25 @@
+{
+  "messageId": "7f3c2a10-5b1e-4c8e-9a2f-1d6b8e4c0a11",
+  "tipo": "boleta.comprada",
+  "version": 1,
+  "fechaEmision": "2026-11-15T19:30:02Z",
+  "origen": "boleteria",
+  "datos": {
+    "boletaId": "5d8e1f20-3a4b-4c6d-8e9f-0a1b2c3d4e5f",
+    "eventoId": "3c1f9d2e-8a4b-4f6c-9e1d-2b7a5c8e0f13",
+    "categoria": "VIP",
+    "precioPagado": 250000,
+    "fechaCompra": "2026-11-15T19:30:00Z",
+    "codigoQr": "5d8e1f20-3a4b-4c6d-8e9f-0a1b2c3d4e5f.Qm9sZXRhRmlybWFkYUNvbkhNQUM",
+    "comprador": {
+      "compradorId": "e4b7a1c2-9d3e-4f5a-8b6c-7d8e9f0a1b2c",
+      "nombre": "Ana Gómez",
+      "correo": "ana.gomez@correo.test"
+    },
+    "evento": {
+      "nombre": "Concierto de fin de semestre",
+      "fechaInicio": "2026-11-28T01:00:00Z",
+      "lugar": "Auditorio principal, Chía"
+    }
+  }
+}
