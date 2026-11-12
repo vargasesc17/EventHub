@@ -23,7 +23,7 @@ public class ArquitecturaTest {
             .allowEmptyShould(true);
 
     @ArchTest
-    static final ArchRule interfacesNoDependeDeInt = noClasses().that().resideInAPackage("..interfaces..")
+    static final ArchRule interfacesNoDependeDeInf = noClasses().that().resideInAPackage("..interfaces..")
             .should().dependOnClassesThat().resideInAnyPackage("..infrastructure..")
             .allowEmptyShould(true);
 }
