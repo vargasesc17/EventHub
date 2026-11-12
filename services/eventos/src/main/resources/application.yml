@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: ${EVENTOS_DB_URL:jdbc:postgresql://localhost:5432/eventos_db}
+    username: ${EVENTOS_DB_USER}
+    password: ${EVENTOS_DB_PASSWORD}
+  application:
+    name: eventos
+
+management:
+  endpoints:
+    web:
+      base-path: /
+  endpoint:
+    health:
+      show-details: always

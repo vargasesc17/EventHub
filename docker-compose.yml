@@ -2,7 +2,7 @@
 # Levantar:  docker compose up -d
 # Apagar:    docker compose down        (agrega -v para borrar también los datos)
 #
-# Por ahora solo trae la infraestructura (RabbitMQ y PostgreSQL).
+# Eventos incluido (#16)
 # Los microservicios y el frontend se agregan en sus propios issues (#16-#18, #38).
 
 services:
@@ -45,6 +45,25 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  eventos:
+    build: ./services/eventos
+    container_name: eventhub-eventos
+    environment:
+      EVENTOS_DB_USER: ${EVENTOS_DB_USER}
+      EVENTOS_DB_PASSWORD: ${EVENTOS_DB_PASSWORD}
+      EVENTOS_DB_URL: jdbc:postgresql://postgres:5432/eventos_db
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   rabbitmq_data:
