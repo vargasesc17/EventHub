@@ -8,7 +8,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 @AnalyzeClasses(packages = "com.eventhub.boleteria")
 
-// TODO(#19): quitar allowEmptyShould cuando domain/application tengan clases
+// TODO(#21): quitar allowEmptyShould cuando domain/application tengan clases
 public class ArquitecturaTest {
     @ArchTest
     static final ArchRule domainNoDependeDeNadie = noClasses().that().resideInAPackage("..domain..")
