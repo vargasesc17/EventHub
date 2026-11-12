@@ -65,6 +65,25 @@ services:
       retries: 5
       start_period: 30s
 
+  boleteria:
+    build: ./services/boleteria
+    container_name: eventhub-boleteria
+    environment:
+      BOLETERIA_DB_USER: ${BOLETERIA_DB_USER}
+      BOLETERIA_DB_PASSWORD: ${BOLETERIA_DB_PASSWORD}
+      BOLETERIA_DB_URL: jdbc:postgresql://postgres:5432/boleteria_db
+    ports:
+      - "8082:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
 volumes:
   rabbitmq_data:
   postgres_data:
