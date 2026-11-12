@@ -14,6 +14,8 @@ FROM eclipse-temurin:25-jre
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd -r eventhub && useradd -r -g eventhub usr_eventhub
 
 COPY --from=build --chown=usr_eventhub:eventhub /app/target/*.jar app.jar
