@@ -2,7 +2,8 @@
 
 **Responsable:** Carlos Vargas · **Épica:** #4
 
-Creación y configuración de eventos, categorías de boleta y ciclo de vida del evento (borrador → publicado → en curso → finalizado / cancelado). Publica `evento.actualizado` en RabbitMQ.
+Compra de boletas con control de concurrencia, tipos de boleta (Factory Method), precios (Strategy), QR y check-in.
+Publica `boleta.comprada`, `evento.aforo.critico` y consume `evento.actualizado`
 
 - Base de datos propia: `boleteria_db` (ver [ADR-0002](../../docs/adr/0002-base-de-datos-por-microservicio.md))
 - Issues: #17 (esqueleto), #21 (Factory Method), #22 (Strategy), #23 (compra), #24 (QR y check-in)
