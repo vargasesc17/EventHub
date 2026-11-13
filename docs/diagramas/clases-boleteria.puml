@@ -5,33 +5,45 @@ title EventHub · Clases del microservicio Boletería
 ' Se edita este archivo y se regenera la imagen (ver docs/diagramas/README.md).
 
 skinparam shadowing false
+skinparam linetype ortho
 skinparam classAttributeIconSize 0
-skinparam packageStyle rectangle
-skinparam nodesep 40
-skinparam ranksep 50
+skinparam roundCorner 0
+skinparam nodesep 45
+skinparam ranksep 55
 skinparam defaultFontName Arial
-skinparam package {
-  BackgroundColor<<servicio>> #FAFAFA
-  BorderColor<<servicio>> #555555
-}
+skinparam ArrowColor #000000
+hide circle
 skinparam class {
-  BackgroundColor<<interfaz>> #EAF2FB
-  BackgroundColor<<puerto>> #EAF2FB
-  BackgroundColor<<caso de uso>> #EEF7EE
-  BackgroundColor<<adaptador>> #FFF6E5
-  BackgroundColor<<entrada>> #F3E8FA
+  BackgroundColor #90EE90
+  BorderColor #000000
+  BorderThickness 1
+  HeaderFontStyle bold
+  StereotypeFontColor #333333
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontStyle bold
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam legend {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
 }
 
 ' ===================================================================== BOLETERÍA
-package "Microservicio Boletería" <<servicio>> {
+package "Microservicio Boletería" {
   package "boleteria.domain" as bo_dom {
-    enum EstadoBoleta {
+    enum EstadoBoleta <<enumeración>> {
       RESERVADA
       ACTIVA
       USADA
       CANCELADA
     }
-    abstract class Boleta {
+    abstract class Boleta <<abstracta>> {
       - id : UUID
       - eventoId : UUID
       - compradorId : UUID
@@ -53,7 +65,7 @@ package "Microservicio Boletería" <<servicio>> {
     class BoletaCortesia {
       - emitidaPor : UUID
     }
-    abstract class FabricaBoleta {
+    abstract class FabricaBoleta <<abstracta>> {
       + emitir(compra : Compra, precio : long) : Boleta
       # {abstract} crearBoleta() : Boleta
     }
@@ -142,18 +154,18 @@ Boleta <|-- BoletaGeneral
 Boleta <|-- BoletaVIP
 Boleta <|-- BoletaEstudiante
 Boleta <|-- BoletaCortesia
-Boleta --> EstadoBoleta
+Boleta --> "1" EstadoBoleta : estado
 FabricaBoleta <|-- FabricaBoletaGeneral
 FabricaBoleta <|-- FabricaBoletaVIP
 FabricaBoleta <|-- FabricaBoletaEstudiante
 FabricaBoleta <|-- FabricaBoletaCortesia
-FabricaBoleta ..> Boleta : crea
+FabricaBoleta ..> "1" Boleta : crea >
 PrecioStrategy <|.. PrecioFijo
 PrecioStrategy <|.. PrecioEarlyBird
 PrecioStrategy <|.. PrecioDinamico
-Boleta "1" -- "0..1" CheckIn
-Boleta "1" -- "0..1" Reserva
-Boleta "*" --> "1" Comprador
+Boleta "1" -- "0..1" CheckIn : registra ingreso >
+Boleta "1" -- "0..1" Reserva : se aparta con >
+Comprador "1" -- "*" Boleta : compra >
 
 CompraBoletaService <|.. ComprarBoletaUseCase
 CheckInService <|.. CheckInUseCase
@@ -172,7 +184,7 @@ CheckInController --> CheckInService
 JdbcInventarioRepository ..|> InventarioRepository
 HmacGeneradorQr ..|> GeneradorQr
 RabbitPublicadorBoleteria ..|> PublicadorBoleteria
-InventarioCategoria ..> AforoEvento
+AforoEvento "1" o-- "1..*" InventarioCategoria : suma >
 
 
 note right of FabricaBoleta
@@ -202,12 +214,14 @@ note right of Boleta
   pasa por el mismo flujo de check-in.
 end note
 legend right
-  Azul: interfaz o puerto
-  Verde: caso de uso (application)
-  Morado: entrada (interfaces)
-  Naranja: adaptador (infrastructure)
-  Los servicios no comparten clases:
-  se comunican por RabbitMQ (ADR-0001)
-  y cada uno tiene su base (ADR-0002).
+  **Notación UML**
+  Línea con triángulo: herencia ("es un")
+  Punteada con triángulo: implementa una interfaz
+  Rombo lleno: composición · Rombo vacío: agregación
+  Flecha simple: usa / depende de
+  Números (1, *, 0..1): multiplicidad
+  ----
+  Los servicios no comparten clases: se comunican
+  por RabbitMQ (ADR-0001) y cada uno tiene su base (ADR-0002).
 endlegend
 @enduml

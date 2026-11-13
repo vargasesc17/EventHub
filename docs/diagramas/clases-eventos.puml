@@ -5,34 +5,46 @@ title EventHub · Clases del microservicio Eventos
 ' Se edita este archivo y se regenera la imagen (ver docs/diagramas/README.md).
 
 skinparam shadowing false
+skinparam linetype ortho
 skinparam classAttributeIconSize 0
-skinparam packageStyle rectangle
-skinparam nodesep 40
-skinparam ranksep 50
+skinparam roundCorner 0
+skinparam nodesep 45
+skinparam ranksep 55
 skinparam defaultFontName Arial
-skinparam package {
-  BackgroundColor<<servicio>> #FAFAFA
-  BorderColor<<servicio>> #555555
-}
+skinparam ArrowColor #000000
+hide circle
 skinparam class {
-  BackgroundColor<<interfaz>> #EAF2FB
-  BackgroundColor<<puerto>> #EAF2FB
-  BackgroundColor<<caso de uso>> #EEF7EE
-  BackgroundColor<<adaptador>> #FFF6E5
-  BackgroundColor<<entrada>> #F3E8FA
+  BackgroundColor #90EE90
+  BorderColor #000000
+  BorderThickness 1
+  HeaderFontStyle bold
+  StereotypeFontColor #333333
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontStyle bold
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam legend {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
 }
 
 ' ===================================================================== EVENTOS
-package "Microservicio Eventos" <<servicio>> {
+package "Microservicio Eventos" {
   package "eventos.domain" as ev_dom {
-    enum EstadoEvento {
+    enum EstadoEvento <<enumeración>> {
       BORRADOR
       PUBLICADO
       EN_CURSO
       FINALIZADO
       CANCELADO
     }
-    enum TipoBoleta {
+    enum TipoBoleta <<enumeración>> {
       GENERAL
       VIP
       ESTUDIANTE
@@ -84,24 +96,27 @@ package "Microservicio Eventos" <<servicio>> {
   }
 }
 
-Evento "1" *-- "1..*" CategoriaBoleta : categorias
-Evento --> EstadoEvento
-CategoriaBoleta --> TipoBoleta
+Evento "1" *-- "1..*" CategoriaBoleta : tiene >
+Evento --> "1" EstadoEvento : estado
+CategoriaBoleta --> "1" TipoBoleta : tipo
 GestionarEventoUseCase --> EventoRepository
 GestionarEventoUseCase --> PublicadorEventos
-GestionarEventoUseCase ..> Evento
+GestionarEventoUseCase ..> Evento : gestiona
 EventoController --> GestionarEventoUseCase
 JdbcEventoRepository ..|> EventoRepository
 RabbitPublicadorEventos ..|> PublicadorEventos
+PublicadorEventos ..> Evento : publica cambios de
 
 
 legend right
-  Azul: interfaz o puerto
-  Verde: caso de uso (application)
-  Morado: entrada (interfaces)
-  Naranja: adaptador (infrastructure)
-  Los servicios no comparten clases:
-  se comunican por RabbitMQ (ADR-0001)
-  y cada uno tiene su base (ADR-0002).
+  **Notación UML**
+  Línea con triángulo: herencia ("es un")
+  Punteada con triángulo: implementa una interfaz
+  Rombo lleno: composición · Rombo vacío: agregación
+  Flecha simple: usa / depende de
+  Números (1, *, 0..1): multiplicidad
+  ----
+  Los servicios no comparten clases: se comunican
+  por RabbitMQ (ADR-0001) y cada uno tiene su base (ADR-0002).
 endlegend
 @enduml
