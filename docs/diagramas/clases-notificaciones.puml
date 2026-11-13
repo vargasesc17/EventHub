@@ -8,8 +8,8 @@ skinparam shadowing false
 skinparam linetype ortho
 skinparam classAttributeIconSize 0
 skinparam roundCorner 0
-skinparam nodesep 45
-skinparam ranksep 55
+skinparam nodesep 60
+skinparam ranksep 80
 skinparam defaultFontName Arial
 skinparam ArrowColor #000000
 hide circle
@@ -23,7 +23,15 @@ skinparam class {
 skinparam package {
   BackgroundColor #FFFFFF
   BorderColor #000000
+  BorderThickness 2
   FontStyle bold
+  FontSize 14
+  BackgroundColor<<interfaces>> #F1E6F7
+  BackgroundColor<<application>> #E3EEF9
+  BackgroundColor<<domain>> #FFF8DC
+  BackgroundColor<<infrastructure>> #ECECEC
+  StereotypeFontColor #FFFFFF
+  StereotypeFontSize 1
 }
 skinparam note {
   BackgroundColor #FFFFFF
@@ -36,7 +44,7 @@ skinparam legend {
 
 ' ===================================================================== NOTIFICACIONES
 package "Microservicio Notificaciones" {
-  package "notificaciones.domain" as no_dom {
+  package "notificaciones.domain" as no_dom <<domain>> {
     class InfoEvento <<record>> {
       eventoId : UUID
       nombre : String
@@ -80,18 +88,18 @@ package "Microservicio Notificaciones" {
       + generarPng(contenido : String) : byte[]
     }
   }
-  package "notificaciones.application" as no_app {
+  package "notificaciones.application" as no_app <<application>> {
     class ProcesarBoletaCompradaUseCase <<caso de uso>>
     class ProcesarEventoActualizadoUseCase <<caso de uso>>
     class ProcesarAforoCriticoUseCase <<caso de uso>>
     class EnviarRecordatoriosUseCase <<caso de uso>>
   }
-  package "notificaciones.interfaces" as no_int {
+  package "notificaciones.interfaces" as no_int <<interfaces>> {
     class ConsumidorBoletaComprada <<entrada>>
     class ConsumidorEventoActualizado <<entrada>>
     class ConsumidorAforoCritico <<entrada>>
   }
-  package "notificaciones.infrastructure" as no_inf {
+  package "notificaciones.infrastructure" as no_inf <<infrastructure>> {
     class SmtpEnviadorCorreo <<adaptador>>
     class ZxingGeneradorImagenQr <<adaptador>>
     class JdbcCompradorRepository <<adaptador>>
@@ -122,11 +130,10 @@ ZxingGeneradorImagenQr ..|> GeneradorImagenQr
 JdbcCompradorRepository ..|> CompradorRepository
 
 
-note bottom of EnviadorCorreo
-  **DIP** en Notificaciones: los casos de uso
-  usan puertos; SMTP/Mailpit, PostgreSQL y
-  RabbitMQ están en infrastructure.
-end note
+no_int -[hidden]down- no_app
+no_app -[hidden]down- no_dom
+no_inf -[hidden]down- no_dom
+
 legend right
   **Notación UML**
   Línea con triángulo: herencia ("es un")
@@ -137,5 +144,13 @@ legend right
   ----
   Los servicios no comparten clases: se comunican
   por RabbitMQ (ADR-0001) y cada uno tiene su base (ADR-0002).
+  ----
+  **Capas (Clean Architecture)**
+  Morado: interfaces · Azul: application
+  Amarillo: domain · Gris: infrastructure
+  ----
+  **Patrones y principios**
+  **DIP**: los casos de uso usan puertos (EnviadorCorreo, repositorios);
+     SMTP/Mailpit, PostgreSQL y RabbitMQ están en infrastructure.
 endlegend
 @enduml

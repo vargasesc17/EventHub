@@ -8,8 +8,8 @@ skinparam shadowing false
 skinparam linetype ortho
 skinparam classAttributeIconSize 0
 skinparam roundCorner 0
-skinparam nodesep 45
-skinparam ranksep 55
+skinparam nodesep 60
+skinparam ranksep 80
 skinparam defaultFontName Arial
 skinparam ArrowColor #000000
 hide circle
@@ -23,7 +23,15 @@ skinparam class {
 skinparam package {
   BackgroundColor #FFFFFF
   BorderColor #000000
+  BorderThickness 2
   FontStyle bold
+  FontSize 14
+  BackgroundColor<<interfaces>> #F1E6F7
+  BackgroundColor<<application>> #E3EEF9
+  BackgroundColor<<domain>> #FFF8DC
+  BackgroundColor<<infrastructure>> #ECECEC
+  StereotypeFontColor #FFFFFF
+  StereotypeFontSize 1
 }
 skinparam note {
   BackgroundColor #FFFFFF
@@ -36,7 +44,7 @@ skinparam legend {
 
 ' ===================================================================== BOLETERÍA
 package "Microservicio Boletería" {
-  package "boleteria.domain" as bo_dom {
+  package "boleteria.domain" as bo_dom <<domain>> {
     enum EstadoBoleta <<enumeración>> {
       RESERVADA
       ACTIVA
@@ -128,7 +136,7 @@ package "Microservicio Boletería" {
       + aforoCritico(aforo : AforoEvento)
     }
   }
-  package "boleteria.application" as bo_app {
+  package "boleteria.application" as bo_app <<application>> {
     interface CompraBoletaService <<interfaz>> {
       + comprar(compra : Compra) : Boleta
       + reservar(compra : Compra) : Reserva
@@ -139,11 +147,11 @@ package "Microservicio Boletería" {
     class ComprarBoletaUseCase <<caso de uso>>
     class CheckInUseCase <<caso de uso>>
   }
-  package "boleteria.interfaces" as bo_int {
+  package "boleteria.interfaces" as bo_int <<interfaces>> {
     class BoletaController <<entrada>>
     class CheckInController <<entrada>>
   }
-  package "boleteria.infrastructure" as bo_inf {
+  package "boleteria.infrastructure" as bo_inf <<infrastructure>> {
     class JdbcInventarioRepository <<adaptador>>
     class HmacGeneradorQr <<adaptador>>
     class RabbitPublicadorBoleteria <<adaptador>>
@@ -187,32 +195,10 @@ RabbitPublicadorBoleteria ..|> PublicadorBoleteria
 AforoEvento "1" o-- "1..*" InventarioCategoria : suma >
 
 
-note right of FabricaBoleta
-  **Factory Method** (#21)
-  Cada subclase decide qué tipo de
-  boleta crea. Agregar un tipo nuevo
-  no obliga a modificar ComprarBoletaUseCase (OCP).
-end note
-note right of PrecioStrategy
-  **Strategy** (#22)
-  El precio se calcula con la estrategia
-  configurada para el evento (fijo, early
-  bird o dinámico) sin if/else en la compra.
-end note
-note bottom of ComprarBoletaUseCase
-  **DIP**: depende de PrecioStrategy y de los
-  puertos (interfaces), no de clases concretas
-  ni de PostgreSQL o RabbitMQ.
-end note
-note top of CheckInService
-  **ISP**: compra y check-in son interfaces
-  separadas. El controlador de check-in no
-  depende de métodos de compra que no usa.
-end note
-note right of Boleta
-  **LSP** (#24): cualquier subtipo de Boleta
-  pasa por el mismo flujo de check-in.
-end note
+bo_int -[hidden]down- bo_app
+bo_app -[hidden]down- bo_dom
+bo_inf -[hidden]down- bo_dom
+
 legend right
   **Notación UML**
   Línea con triángulo: herencia ("es un")
@@ -223,5 +209,19 @@ legend right
   ----
   Los servicios no comparten clases: se comunican
   por RabbitMQ (ADR-0001) y cada uno tiene su base (ADR-0002).
+  ----
+  **Capas (Clean Architecture)**
+  Morado: interfaces · Azul: application
+  Amarillo: domain · Gris: infrastructure
+  ----
+  **Patrones y principios**
+  **Factory Method** (#21): cada FabricaBoleta... crea su tipo de boleta;
+     agregar un tipo nuevo no obliga a cambiar ComprarBoletaUseCase (OCP).
+  **Strategy** (#22): PrecioStrategy calcula el precio (fijo, early bird
+     o dinámico) sin if/else en la compra.
+  **ISP**: CompraBoletaService y CheckInService son interfaces separadas.
+  **DIP**: ComprarBoletaUseCase depende de PrecioStrategy y de puertos,
+     no de PostgreSQL ni RabbitMQ.
+  **LSP** (#24): cualquier subtipo de Boleta pasa por el mismo check-in.
 endlegend
 @enduml
