@@ -1,0 +1,125 @@
+@startuml clases-notificaciones
+' Diagrama de clases de EventHub (#14). Editar y regenerar: ver README.md de esta carpeta.
+title EventHub · Clases del microservicio Notificaciones
+' Diagrama de clases del dominio de EventHub (#14)
+' Se edita este archivo y se regenera la imagen (ver docs/diagramas/README.md).
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam nodesep 40
+skinparam ranksep 50
+skinparam defaultFontName Arial
+skinparam package {
+  BackgroundColor<<servicio>> #FAFAFA
+  BorderColor<<servicio>> #555555
+}
+skinparam class {
+  BackgroundColor<<interfaz>> #EAF2FB
+  BackgroundColor<<puerto>> #EAF2FB
+  BackgroundColor<<caso de uso>> #EEF7EE
+  BackgroundColor<<adaptador>> #FFF6E5
+  BackgroundColor<<entrada>> #F3E8FA
+}
+
+' ===================================================================== NOTIFICACIONES
+package "Microservicio Notificaciones" <<servicio>> {
+  package "notificaciones.domain" as no_dom {
+    class InfoEvento <<record>> {
+      eventoId : UUID
+      nombre : String
+      fechaInicio : Instant
+      lugar : String
+    }
+    class EventoLocal <<record>> {
+      cancelado : boolean
+      ultimaFechaEmision : Instant
+      + esMasRecienteQue(fecha : Instant) : boolean
+    }
+    class CompradorEvento <<record>> {
+      boletaId : UUID
+      eventoId : UUID
+      compradorId : UUID
+      nombre : String
+      correo : String
+    }
+    class Correo <<record>> {
+      para : String
+      asunto : String
+      cuerpoHtml : String
+      qrPng : byte[]
+    }
+    enum TipoCambio {
+      PUBLICADO
+      FECHA
+      LUGAR
+      INVENTARIO
+      CANCELADO
+    }
+    interface MensajeProcesadoRepository <<puerto>>
+    interface "EventoRepository" as EventoRepoNotif <<puerto>>
+    interface CompradorRepository <<puerto>>
+    interface RecordatorioRepository <<puerto>>
+    interface AlertaAforoRepository <<puerto>>
+    interface EnviadorCorreo <<puerto>> {
+      + enviar(correo : Correo)
+    }
+    interface GeneradorImagenQr <<puerto>> {
+      + generarPng(contenido : String) : byte[]
+    }
+  }
+  package "notificaciones.application" as no_app {
+    class ProcesarBoletaCompradaUseCase <<caso de uso>>
+    class ProcesarEventoActualizadoUseCase <<caso de uso>>
+    class ProcesarAforoCriticoUseCase <<caso de uso>>
+    class EnviarRecordatoriosUseCase <<caso de uso>>
+  }
+  package "notificaciones.interfaces" as no_int {
+    class ConsumidorBoletaComprada <<entrada>>
+    class ConsumidorEventoActualizado <<entrada>>
+    class ConsumidorAforoCritico <<entrada>>
+  }
+  package "notificaciones.infrastructure" as no_inf {
+    class SmtpEnviadorCorreo <<adaptador>>
+    class ZxingGeneradorImagenQr <<adaptador>>
+    class JdbcCompradorRepository <<adaptador>>
+  }
+}
+
+EventoLocal *-- InfoEvento
+ProcesarBoletaCompradaUseCase --> MensajeProcesadoRepository
+ProcesarBoletaCompradaUseCase --> CompradorRepository
+ProcesarBoletaCompradaUseCase --> EventoRepoNotif
+ProcesarBoletaCompradaUseCase --> GeneradorImagenQr
+ProcesarBoletaCompradaUseCase --> EnviadorCorreo
+ProcesarEventoActualizadoUseCase --> CompradorRepository
+ProcesarEventoActualizadoUseCase --> EventoRepoNotif
+ProcesarEventoActualizadoUseCase --> EnviadorCorreo
+ProcesarEventoActualizadoUseCase ..> TipoCambio
+ProcesarAforoCriticoUseCase --> AlertaAforoRepository
+ProcesarAforoCriticoUseCase --> EnviadorCorreo
+EnviarRecordatoriosUseCase --> RecordatorioRepository
+EnviarRecordatoriosUseCase --> EnviadorCorreo
+ConsumidorBoletaComprada --> ProcesarBoletaCompradaUseCase
+ConsumidorEventoActualizado --> ProcesarEventoActualizadoUseCase
+ConsumidorAforoCritico --> ProcesarAforoCriticoUseCase
+SmtpEnviadorCorreo ..|> EnviadorCorreo
+ZxingGeneradorImagenQr ..|> GeneradorImagenQr
+JdbcCompradorRepository ..|> CompradorRepository
+
+
+note bottom of EnviadorCorreo
+  **DIP** en Notificaciones: los casos de uso
+  usan puertos; SMTP/Mailpit, PostgreSQL y
+  RabbitMQ están en infrastructure.
+end note
+legend right
+  Azul: interfaz o puerto
+  Verde: caso de uso (application)
+  Morado: entrada (interfaces)
+  Naranja: adaptador (infrastructure)
+  Los servicios no comparten clases:
+  se comunican por RabbitMQ (ADR-0001)
+  y cada uno tiene su base (ADR-0002).
+endlegend
+@enduml

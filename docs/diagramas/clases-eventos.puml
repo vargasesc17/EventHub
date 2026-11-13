@@ -1,0 +1,107 @@
+@startuml clases-eventos
+' Diagrama de clases de EventHub (#14). Editar y regenerar: ver README.md de esta carpeta.
+title EventHub · Clases del microservicio Eventos
+' Diagrama de clases del dominio de EventHub (#14)
+' Se edita este archivo y se regenera la imagen (ver docs/diagramas/README.md).
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam nodesep 40
+skinparam ranksep 50
+skinparam defaultFontName Arial
+skinparam package {
+  BackgroundColor<<servicio>> #FAFAFA
+  BorderColor<<servicio>> #555555
+}
+skinparam class {
+  BackgroundColor<<interfaz>> #EAF2FB
+  BackgroundColor<<puerto>> #EAF2FB
+  BackgroundColor<<caso de uso>> #EEF7EE
+  BackgroundColor<<adaptador>> #FFF6E5
+  BackgroundColor<<entrada>> #F3E8FA
+}
+
+' ===================================================================== EVENTOS
+package "Microservicio Eventos" <<servicio>> {
+  package "eventos.domain" as ev_dom {
+    enum EstadoEvento {
+      BORRADOR
+      PUBLICADO
+      EN_CURSO
+      FINALIZADO
+      CANCELADO
+    }
+    enum TipoBoleta {
+      GENERAL
+      VIP
+      ESTUDIANTE
+      CORTESIA
+    }
+    class Evento {
+      - id : UUID
+      - nombre : String
+      - lugar : String
+      - fechaInicio : Instant
+      - aforoMaximo : int
+      - organizadorId : UUID
+      - estado : EstadoEvento
+      + publicar()
+      + iniciar()
+      + finalizar()
+      + cancelar()
+      + cambiarFecha(nueva : Instant)
+      + cambiarLugar(nuevo : String)
+      + validarCupos() : boolean
+    }
+    class CategoriaBoleta {
+      - tipo : TipoBoleta
+      - cupos : int
+      - precioBase : long
+    }
+    interface EventoRepository <<puerto>> {
+      + guardar(evento : Evento)
+      + buscar(id : UUID) : Optional<Evento>
+    }
+    interface PublicadorEventos <<puerto>> {
+      + eventoActualizado(evento : Evento, cambios : Set<String>)
+    }
+  }
+  package "eventos.application" as ev_app {
+    class GestionarEventoUseCase <<caso de uso>> {
+      + crear(datos) : Evento
+      + publicar(id : UUID)
+      + modificar(id : UUID, cambios)
+      + cancelar(id : UUID)
+    }
+  }
+  package "eventos.interfaces" as ev_int {
+    class EventoController <<entrada>>
+  }
+  package "eventos.infrastructure" as ev_inf {
+    class JdbcEventoRepository <<adaptador>>
+    class RabbitPublicadorEventos <<adaptador>>
+  }
+}
+
+Evento "1" *-- "1..*" CategoriaBoleta : categorias
+Evento --> EstadoEvento
+CategoriaBoleta --> TipoBoleta
+GestionarEventoUseCase --> EventoRepository
+GestionarEventoUseCase --> PublicadorEventos
+GestionarEventoUseCase ..> Evento
+EventoController --> GestionarEventoUseCase
+JdbcEventoRepository ..|> EventoRepository
+RabbitPublicadorEventos ..|> PublicadorEventos
+
+
+legend right
+  Azul: interfaz o puerto
+  Verde: caso de uso (application)
+  Morado: entrada (interfaces)
+  Naranja: adaptador (infrastructure)
+  Los servicios no comparten clases:
+  se comunican por RabbitMQ (ADR-0001)
+  y cada uno tiene su base (ADR-0002).
+endlegend
+@enduml

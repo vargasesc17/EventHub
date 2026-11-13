@@ -1,0 +1,213 @@
+@startuml clases-boleteria
+' Diagrama de clases de EventHub (#14). Editar y regenerar: ver README.md de esta carpeta.
+title EventHub · Clases del microservicio Boletería
+' Diagrama de clases del dominio de EventHub (#14)
+' Se edita este archivo y se regenera la imagen (ver docs/diagramas/README.md).
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam nodesep 40
+skinparam ranksep 50
+skinparam defaultFontName Arial
+skinparam package {
+  BackgroundColor<<servicio>> #FAFAFA
+  BorderColor<<servicio>> #555555
+}
+skinparam class {
+  BackgroundColor<<interfaz>> #EAF2FB
+  BackgroundColor<<puerto>> #EAF2FB
+  BackgroundColor<<caso de uso>> #EEF7EE
+  BackgroundColor<<adaptador>> #FFF6E5
+  BackgroundColor<<entrada>> #F3E8FA
+}
+
+' ===================================================================== BOLETERÍA
+package "Microservicio Boletería" <<servicio>> {
+  package "boleteria.domain" as bo_dom {
+    enum EstadoBoleta {
+      RESERVADA
+      ACTIVA
+      USADA
+      CANCELADA
+    }
+    abstract class Boleta {
+      - id : UUID
+      - eventoId : UUID
+      - compradorId : UUID
+      - precioPagado : long
+      - estado : EstadoBoleta
+      - codigoQr : String
+      - fechaCompra : Instant
+      + {abstract} categoria() : String
+      + puedeIngresar() : boolean
+      + marcarUsada()
+    }
+    class BoletaGeneral
+    class BoletaVIP {
+      - beneficios : List<String>
+    }
+    class BoletaEstudiante {
+      - carnetEstudiantil : String
+    }
+    class BoletaCortesia {
+      - emitidaPor : UUID
+    }
+    abstract class FabricaBoleta {
+      + emitir(compra : Compra, precio : long) : Boleta
+      # {abstract} crearBoleta() : Boleta
+    }
+    class FabricaBoletaGeneral
+    class FabricaBoletaVIP
+    class FabricaBoletaEstudiante
+    class FabricaBoletaCortesia
+    interface PrecioStrategy <<interfaz>> {
+      + calcular(inventario : InventarioCategoria, fechaCompra : Instant) : long
+    }
+    class PrecioFijo
+    class PrecioEarlyBird {
+      - fechaLimite : Instant
+      - descuento : double
+    }
+    class PrecioDinamico {
+      - incrementoPorOcupacion : double
+    }
+    class InventarioCategoria {
+      - eventoId : UUID
+      - categoria : String
+      - cupos : int
+      - disponibles : int
+      - reservadas : int
+      - vendidas : int
+      - precioBase : long
+    }
+    class AforoEvento {
+      - eventoId : UUID
+      - aforoMaximo : int
+      - vendidas : int
+      - alertaEnviada : boolean
+      + alcanzaUmbral(umbral : int) : boolean
+    }
+    class Comprador {
+      - id : UUID
+      - nombre : String
+      - correo : String
+    }
+    class Reserva {
+      - id : UUID
+      - boletaId : UUID
+      - venceEn : Instant
+    }
+    class CheckIn {
+      - id : UUID
+      - boletaId : UUID
+      - fechaHora : Instant
+      - validadoPor : UUID
+    }
+    interface BoletaRepository <<puerto>>
+    interface InventarioRepository <<puerto>>
+    interface CheckInRepository <<puerto>>
+    interface GeneradorQr <<puerto>> {
+      + generar(boletaId : UUID) : String
+      + esValido(codigo : String) : boolean
+    }
+    interface "PublicadorEventos" as PublicadorBoleteria <<puerto>> {
+      + boletaComprada(boleta : Boleta, comprador : Comprador)
+      + aforoCritico(aforo : AforoEvento)
+    }
+  }
+  package "boleteria.application" as bo_app {
+    interface CompraBoletaService <<interfaz>> {
+      + comprar(compra : Compra) : Boleta
+      + reservar(compra : Compra) : Reserva
+    }
+    interface CheckInService <<interfaz>> {
+      + validar(codigoQr : String, staffId : UUID) : ResultadoCheckIn
+    }
+    class ComprarBoletaUseCase <<caso de uso>>
+    class CheckInUseCase <<caso de uso>>
+  }
+  package "boleteria.interfaces" as bo_int {
+    class BoletaController <<entrada>>
+    class CheckInController <<entrada>>
+  }
+  package "boleteria.infrastructure" as bo_inf {
+    class JdbcInventarioRepository <<adaptador>>
+    class HmacGeneradorQr <<adaptador>>
+    class RabbitPublicadorBoleteria <<adaptador>>
+  }
+}
+
+Boleta <|-- BoletaGeneral
+Boleta <|-- BoletaVIP
+Boleta <|-- BoletaEstudiante
+Boleta <|-- BoletaCortesia
+Boleta --> EstadoBoleta
+FabricaBoleta <|-- FabricaBoletaGeneral
+FabricaBoleta <|-- FabricaBoletaVIP
+FabricaBoleta <|-- FabricaBoletaEstudiante
+FabricaBoleta <|-- FabricaBoletaCortesia
+FabricaBoleta ..> Boleta : crea
+PrecioStrategy <|.. PrecioFijo
+PrecioStrategy <|.. PrecioEarlyBird
+PrecioStrategy <|.. PrecioDinamico
+Boleta "1" -- "0..1" CheckIn
+Boleta "1" -- "0..1" Reserva
+Boleta "*" --> "1" Comprador
+
+CompraBoletaService <|.. ComprarBoletaUseCase
+CheckInService <|.. CheckInUseCase
+ComprarBoletaUseCase --> PrecioStrategy
+ComprarBoletaUseCase --> FabricaBoleta
+ComprarBoletaUseCase --> InventarioRepository
+ComprarBoletaUseCase --> BoletaRepository
+ComprarBoletaUseCase --> GeneradorQr
+ComprarBoletaUseCase --> PublicadorBoleteria
+ComprarBoletaUseCase ..> AforoEvento
+CheckInUseCase --> GeneradorQr
+CheckInUseCase --> BoletaRepository
+CheckInUseCase --> CheckInRepository
+BoletaController --> CompraBoletaService
+CheckInController --> CheckInService
+JdbcInventarioRepository ..|> InventarioRepository
+HmacGeneradorQr ..|> GeneradorQr
+RabbitPublicadorBoleteria ..|> PublicadorBoleteria
+InventarioCategoria ..> AforoEvento
+
+
+note right of FabricaBoleta
+  **Factory Method** (#21)
+  Cada subclase decide qué tipo de
+  boleta crea. Agregar un tipo nuevo
+  no obliga a modificar ComprarBoletaUseCase (OCP).
+end note
+note right of PrecioStrategy
+  **Strategy** (#22)
+  El precio se calcula con la estrategia
+  configurada para el evento (fijo, early
+  bird o dinámico) sin if/else en la compra.
+end note
+note bottom of ComprarBoletaUseCase
+  **DIP**: depende de PrecioStrategy y de los
+  puertos (interfaces), no de clases concretas
+  ni de PostgreSQL o RabbitMQ.
+end note
+note top of CheckInService
+  **ISP**: compra y check-in son interfaces
+  separadas. El controlador de check-in no
+  depende de métodos de compra que no usa.
+end note
+note right of Boleta
+  **LSP** (#24): cualquier subtipo de Boleta
+  pasa por el mismo flujo de check-in.
+end note
+legend right
+  Azul: interfaz o puerto
+  Verde: caso de uso (application)
+  Morado: entrada (interfaces)
+  Naranja: adaptador (infrastructure)
+  Los servicios no comparten clases:
+  se comunican por RabbitMQ (ADR-0001)
+  y cada uno tiene su base (ADR-0002).
+endlegend
+@enduml
