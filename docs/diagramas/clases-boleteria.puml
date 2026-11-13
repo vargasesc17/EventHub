@@ -51,6 +51,17 @@ package "Microservicio Boletería" {
       USADA
       CANCELADA
     }
+    enum TipoBoleta <<enumeración>> {
+      GENERAL
+      VIP
+      ESTUDIANTE
+      CORTESIA
+    }
+    enum TipoPrecio <<enumeración>> {
+      FIJO
+      EARLY_BIRD
+      DINAMICO
+    }
     abstract class Boleta <<abstracta>> {
       - id : UUID
       - eventoId : UUID
@@ -59,7 +70,7 @@ package "Microservicio Boletería" {
       - estado : EstadoBoleta
       - codigoQr : String
       - fechaCompra : Instant
-      + {abstract} categoria() : String
+      + {abstract} categoria() : TipoBoleta
       + puedeIngresar() : boolean
       + marcarUsada()
     }
@@ -75,12 +86,17 @@ package "Microservicio Boletería" {
     }
     abstract class FabricaBoleta <<abstracta>> {
       + emitir(compra : Compra, precio : long) : Boleta
-      # {abstract} crearBoleta() : Boleta
+      # {abstract} crearBoleta(compra : Compra) : Boleta
     }
     class FabricaBoletaGeneral
     class FabricaBoletaVIP
     class FabricaBoletaEstudiante
     class FabricaBoletaCortesia
+    class ParametrosPrecio <<record>> {
+      fechaLimite : Instant [0..1]
+      descuento : double [0..1]
+      incrementoPorOcupacion : double [0..1]
+    }
     interface PrecioStrategy <<interfaz>> {
       + calcular(inventario : InventarioCategoria, fechaCompra : Instant) : long
     }
@@ -94,7 +110,9 @@ package "Microservicio Boletería" {
     }
     class InventarioCategoria {
       - eventoId : UUID
-      - categoria : String
+      - categoria : TipoBoleta
+      - tipoPrecio : TipoPrecio
+      - parametrosPrecio : ParametrosPrecio
       - cupos : int
       - disponibles : int
       - reservadas : int
@@ -103,10 +121,15 @@ package "Microservicio Boletería" {
     }
     class AforoEvento {
       - eventoId : UUID
+      - nombreEvento : String
+      - organizadorId : UUID
+      - organizadorCorreo : String
+      - ventasBloqueadas : boolean
       - aforoMaximo : int
       - vendidas : int
       - alertaEnviada : boolean
       + alcanzaUmbral(umbral : int) : boolean
+      + bloquearVentas()
     }
     class Comprador {
       - id : UUID
@@ -124,19 +147,51 @@ package "Microservicio Boletería" {
       - fechaHora : Instant
       - validadoPor : UUID
     }
+    class Compra <<record>> {
+      eventoId : UUID
+      categoria : TipoBoleta
+      compradorId : UUID
+      nombreComprador : String
+      correoComprador : String
+      carnetEstudiantil : String [0..1]
+      emitidaPor : UUID [0..1]
+    }
+  }
+  package "boleteria.application" as bo_app <<application>> {
     interface BoletaRepository <<puerto>>
-    interface InventarioRepository <<puerto>>
+    interface InventarioRepository <<puerto>> {
+      + descontarSiHayCupo(eventoId : UUID, categoria : TipoBoleta, cantidad : int) : boolean
+    }
+    interface AforoRepository <<puerto>>
+    interface MensajeProcesadoRepository <<puerto>>
     interface CheckInRepository <<puerto>>
     interface GeneradorQr <<puerto>> {
       + generar(boletaId : UUID) : String
       + esValido(codigo : String) : boolean
     }
-    interface "PublicadorEventos" as PublicadorBoleteria <<puerto>> {
+    interface PublicadorBoleteria <<puerto>> {
       + boletaComprada(boleta : Boleta, comprador : Comprador)
       + aforoCritico(aforo : AforoEvento)
     }
-  }
-  package "boleteria.application" as bo_app <<application>> {
+    class RegistroFabricas {
+      - fabricas : Map<TipoBoleta, FabricaBoleta>
+      + fabricaPara(tipo : TipoBoleta) : FabricaBoleta
+    }
+    class RegistroEstrategias {
+      - estrategias : Map<TipoPrecio, PrecioStrategy>
+      + estrategiaPara(tipo : TipoPrecio) : PrecioStrategy
+    }
+    class SincronizarEventoUseCase <<caso de uso>> {
+      + alPublicar(...)
+      + ajustarInventario(...)
+      + alCancelar(eventoId : UUID)
+    }
+    class LiberarReservasVencidasUseCase <<caso de uso>>
+    class ResultadoCheckIn <<record>> {
+      aceptado : boolean
+      motivo : String [0..1]
+      boletaId : UUID [0..1]
+    }
     interface CompraBoletaService <<interfaz>> {
       + comprar(compra : Compra) : Boleta
       + reservar(compra : Compra) : Reserva
@@ -146,13 +201,22 @@ package "Microservicio Boletería" {
     }
     class ComprarBoletaUseCase <<caso de uso>>
     class CheckInUseCase <<caso de uso>>
+    class ConfigurarPrecioUseCase <<caso de uso>> {
+      + configurar(eventoId : UUID, categoria : TipoBoleta, tipo : TipoPrecio, parametros : ParametrosPrecio)
+    }
   }
   package "boleteria.interfaces" as bo_int <<interfaces>> {
     class BoletaController <<entrada>>
     class CheckInController <<entrada>>
+    class PrecioController <<entrada>>
+    class ConsumidorEventoActualizado <<entrada>>
+    class LiberarReservasJob <<programada>>
   }
   package "boleteria.infrastructure" as bo_inf <<infrastructure>> {
-    class JdbcInventarioRepository <<adaptador>>
+    class JpaInventarioRepository <<adaptador>>
+    class JpaBoletaRepository <<adaptador>>
+    class JpaCheckInRepository <<adaptador>>
+    class JpaAforoRepository <<adaptador>>
     class HmacGeneradorQr <<adaptador>>
     class RabbitPublicadorBoleteria <<adaptador>>
   }
@@ -177,8 +241,8 @@ Comprador "1" -- "*" Boleta : compra >
 
 CompraBoletaService <|.. ComprarBoletaUseCase
 CheckInService <|.. CheckInUseCase
-ComprarBoletaUseCase --> PrecioStrategy
-ComprarBoletaUseCase --> FabricaBoleta
+ComprarBoletaUseCase --> RegistroFabricas
+ComprarBoletaUseCase --> RegistroEstrategias
 ComprarBoletaUseCase --> InventarioRepository
 ComprarBoletaUseCase --> BoletaRepository
 ComprarBoletaUseCase --> GeneradorQr
@@ -189,10 +253,26 @@ CheckInUseCase --> BoletaRepository
 CheckInUseCase --> CheckInRepository
 BoletaController --> CompraBoletaService
 CheckInController --> CheckInService
-JdbcInventarioRepository ..|> InventarioRepository
+JpaInventarioRepository ..|> InventarioRepository
 HmacGeneradorQr ..|> GeneradorQr
 RabbitPublicadorBoleteria ..|> PublicadorBoleteria
 AforoEvento "1" o-- "1..*" InventarioCategoria : suma >
+RegistroFabricas o-- "1..*" FabricaBoleta
+RegistroEstrategias o-- "1..*" PrecioStrategy
+ComprarBoletaUseCase ..> Compra
+FabricaBoleta ..> Compra
+CheckInService ..> ResultadoCheckIn
+ConsumidorEventoActualizado --> SincronizarEventoUseCase
+SincronizarEventoUseCase --> InventarioRepository
+SincronizarEventoUseCase --> AforoRepository
+SincronizarEventoUseCase --> MensajeProcesadoRepository
+LiberarReservasJob --> LiberarReservasVencidasUseCase
+LiberarReservasVencidasUseCase --> InventarioRepository
+JpaBoletaRepository ..|> BoletaRepository
+JpaCheckInRepository ..|> CheckInRepository
+JpaAforoRepository ..|> AforoRepository
+PrecioController --> ConfigurarPrecioUseCase
+ConfigurarPrecioUseCase --> InventarioRepository
 
 
 bo_int -[hidden]down- bo_app
@@ -213,6 +293,9 @@ legend right
   **Capas (Clean Architecture)**
   Morado: interfaces · Azul: application
   Amarillo: domain · Gris: infrastructure
+  Los puertos (repositorios, publicadores) están en application:
+  domain no depende de nadie; application depende de domain.
+  «programada»: tarea que se ejecuta sola cada cierto tiempo.
   ----
   **Patrones y principios**
   **Factory Method** (#21): cada FabricaBoleta... crea su tipo de boleta;
@@ -220,8 +303,10 @@ legend right
   **Strategy** (#22): PrecioStrategy calcula el precio (fijo, early bird
      o dinámico) sin if/else en la compra.
   **ISP**: CompraBoletaService y CheckInService son interfaces separadas.
-  **DIP**: ComprarBoletaUseCase depende de PrecioStrategy y de puertos,
-     no de PostgreSQL ni RabbitMQ.
+  **DIP**: ComprarBoletaUseCase depende de abstracciones (PrecioStrategy y
+     FabricaBoleta vía sus registros, y puertos), no de PostgreSQL ni RabbitMQ.
+  **Precio**: Boletería guarda la estrategia por categoría (FIJO por defecto);
+     Eventos solo envía precioBase.
   **LSP** (#24): cualquier subtipo de Boleta pasa por el mismo check-in.
 endlegend
 @enduml

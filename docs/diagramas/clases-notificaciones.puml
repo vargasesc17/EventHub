@@ -76,6 +76,8 @@ package "Microservicio Notificaciones" {
       INVENTARIO
       CANCELADO
     }
+  }
+  package "notificaciones.application" as no_app <<application>> {
     interface MensajeProcesadoRepository <<puerto>>
     interface "EventoRepository" as EventoRepoNotif <<puerto>>
     interface CompradorRepository <<puerto>>
@@ -87,8 +89,6 @@ package "Microservicio Notificaciones" {
     interface GeneradorImagenQr <<puerto>> {
       + generarPng(contenido : String) : byte[]
     }
-  }
-  package "notificaciones.application" as no_app <<application>> {
     class ProcesarBoletaCompradaUseCase <<caso de uso>>
     class ProcesarEventoActualizadoUseCase <<caso de uso>>
     class ProcesarAforoCriticoUseCase <<caso de uso>>
@@ -98,11 +98,12 @@ package "Microservicio Notificaciones" {
     class ConsumidorBoletaComprada <<entrada>>
     class ConsumidorEventoActualizado <<entrada>>
     class ConsumidorAforoCritico <<entrada>>
+    class RecordatoriosJob <<programada>>
   }
   package "notificaciones.infrastructure" as no_inf <<infrastructure>> {
     class SmtpEnviadorCorreo <<adaptador>>
     class ZxingGeneradorImagenQr <<adaptador>>
-    class JdbcCompradorRepository <<adaptador>>
+    class JpaCompradorRepository <<adaptador>>
   }
 }
 
@@ -111,6 +112,8 @@ EventoLocal "1" -- "*" CompradorEvento : compradores >
 EnviadorCorreo ..> Correo : envía >
 ProcesarBoletaCompradaUseCase --> MensajeProcesadoRepository
 ProcesarBoletaCompradaUseCase --> CompradorRepository
+ProcesarEventoActualizadoUseCase --> MensajeProcesadoRepository
+ProcesarAforoCriticoUseCase --> MensajeProcesadoRepository
 ProcesarBoletaCompradaUseCase --> EventoRepoNotif
 ProcesarBoletaCompradaUseCase --> GeneradorImagenQr
 ProcesarBoletaCompradaUseCase --> EnviadorCorreo
@@ -127,7 +130,8 @@ ConsumidorEventoActualizado --> ProcesarEventoActualizadoUseCase
 ConsumidorAforoCritico --> ProcesarAforoCriticoUseCase
 SmtpEnviadorCorreo ..|> EnviadorCorreo
 ZxingGeneradorImagenQr ..|> GeneradorImagenQr
-JdbcCompradorRepository ..|> CompradorRepository
+JpaCompradorRepository ..|> CompradorRepository
+RecordatoriosJob --> EnviarRecordatoriosUseCase
 
 
 no_int -[hidden]down- no_app
@@ -148,6 +152,9 @@ legend right
   **Capas (Clean Architecture)**
   Morado: interfaces · Azul: application
   Amarillo: domain · Gris: infrastructure
+  Los puertos (repositorios, publicadores) están en application:
+  domain no depende de nadie; application depende de domain.
+  «programada»: tarea que se ejecuta sola cada cierto tiempo.
   ----
   **Patrones y principios**
   **DIP**: los casos de uso usan puertos (EnviadorCorreo, repositorios);

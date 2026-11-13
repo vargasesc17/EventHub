@@ -58,6 +58,17 @@ package "Microservicio Eventos" {
       ESTUDIANTE
       CORTESIA
     }
+    enum TipoCambio <<enumeración>> {
+      PUBLICADO
+      FECHA
+      LUGAR
+      INVENTARIO
+      CANCELADO
+    }
+    class ValoresAnteriores <<record>> {
+      fechaInicio : Instant [0..1]
+      lugar : String [0..1]
+    }
     class Evento {
       - id : UUID
       - nombre : String
@@ -65,6 +76,7 @@ package "Microservicio Eventos" {
       - fechaInicio : Instant
       - aforoMaximo : int
       - organizadorId : UUID
+      - organizadorCorreo : String
       - estado : EstadoEvento
       + publicar()
       + iniciar()
@@ -79,15 +91,15 @@ package "Microservicio Eventos" {
       - cupos : int
       - precioBase : long
     }
+  }
+  package "eventos.application" as ev_app <<application>> {
     interface EventoRepository <<puerto>> {
       + guardar(evento : Evento)
       + buscar(id : UUID) : Optional<Evento>
     }
     interface PublicadorEventos <<puerto>> {
-      + eventoActualizado(evento : Evento, cambios : Set<String>)
+      + eventoActualizado(evento : Evento, cambios : Set<TipoCambio>, anteriores : ValoresAnteriores)
     }
-  }
-  package "eventos.application" as ev_app <<application>> {
     class GestionarEventoUseCase <<caso de uso>> {
       + crear(datos) : Evento
       + publicar(id : UUID)
@@ -114,6 +126,8 @@ EventoController --> GestionarEventoUseCase
 JdbcEventoRepository ..|> EventoRepository
 RabbitPublicadorEventos ..|> PublicadorEventos
 PublicadorEventos ..> Evento : publica cambios de
+PublicadorEventos ..> TipoCambio
+PublicadorEventos ..> ValoresAnteriores
 
 
 ev_int -[hidden]down- ev_app
@@ -134,6 +148,9 @@ legend right
   **Capas (Clean Architecture)**
   Morado: interfaces · Azul: application
   Amarillo: domain · Gris: infrastructure
+  Los puertos (repositorios, publicadores) están en application:
+  domain no depende de nadie; application depende de domain.
+  «programada»: tarea que se ejecuta sola cada cierto tiempo.
   ----
   **Patrones y principios**
   **DIP**: GestionarEventoUseCase depende de puertos (EventoRepository,

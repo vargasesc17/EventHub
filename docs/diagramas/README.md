@@ -6,7 +6,7 @@
 | `c2-contenedores.svg` | C4 nivel 2: microservicios, bases de datos y broker |
 | `clases-eventos` (`.puml`, `.svg`, `.png`) | Clases del microservicio Eventos (#14) |
 | `clases-boleteria` (`.puml`, `.svg`, `.png`) | Clases de Boletería: jerarquía de boletas, Factory Method, Strategy, ISP y DIP (#14) |
-| `clases-notificaciones` (`.puml`, `.svg`, `.png`) | Clases de Notificaciones, igual a como está implementado (#14) |
+| `clases-notificaciones` (`.puml`, `.svg`, `.png`) | Clases de Notificaciones, diseño propuesto (#18) |
 
 ## Diagrama de clases (#14)
 
@@ -17,10 +17,10 @@ Cubre lo que pide el issue:
 - **Strategy:** la interfaz `PrecioStrategy` con `PrecioFijo`, `PrecioEarlyBird` y `PrecioDinamico`.
 - **A qué microservicio pertenece cada clase:** un diagrama por servicio.
 - **ISP:** `CompraBoletaService` y `CheckInService` son interfaces separadas.
-- **DIP:** `ComprarBoletaUseCase` depende de `PrecioStrategy` y de puertos (interfaces), no de clases concretas.
-- **Clean Architecture:** cada servicio tiene los paquetes `domain`, `application`, `infrastructure` e `interfaces` (la misma estructura del código de `services/`). Los controladores REST y los consumidores de RabbitMQ están en `interfaces`, porque son la entrada desde afuera.
+- **DIP:** `ComprarBoletaUseCase` depende de abstracciones (`PrecioStrategy` y `FabricaBoleta`, a través de `RegistroEstrategias` y `RegistroFabricas`, y de puertos), no de clases concretas.
+- **Clean Architecture:** cada servicio tiene los paquetes `domain`, `application`, `infrastructure` e `interfaces` (la misma estructura del código de `services/`). Los controladores REST, los consumidores de RabbitMQ y las tareas programadas están en `interfaces`, porque son la entrada desde afuera. Los puertos (repositorios y publicadores) están en `application`: `domain` no depende de ninguna otra capa.
 
-Las clases de Eventos y Boletería son el **diseño propuesto** a partir de los ADRs y los issues #19–#24; si la implementación cambia, se actualiza el `.puml`. Las de Notificaciones ya están implementadas.
+Los tres diagramas son el **diseño propuesto** a partir de los ADRs y los issues #18–#24; si la implementación cambia, se actualiza el `.puml`.
 
 ## Cómo editarlos
 
