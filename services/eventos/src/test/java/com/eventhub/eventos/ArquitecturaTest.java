@@ -13,7 +13,8 @@ public class ArquitecturaTest {
     @ArchTest
     static final ArchRule domainNoDependeDeNadie = noClasses().that().resideInAPackage("..domain..")
             .should().dependOnClassesThat()
-            .resideInAnyPackage("..application..", "..infrastructure..", "..interfaces..", "org.springframework..")
+            .resideInAnyPackage("..application..", "..infrastructure..", "..interfaces..",
+                    "org.springframework..", "jakarta..", "org.hibernate..")
             .allowEmptyShould(true);
 
     @ArchTest
