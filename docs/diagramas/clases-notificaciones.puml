@@ -1,0 +1,163 @@
+@startuml clases-notificaciones
+' Diagrama de clases de EventHub (#14). Editar y regenerar: ver README.md de esta carpeta.
+title EventHub · Clases del microservicio Notificaciones
+' Diagrama de clases del dominio de EventHub (#14)
+' Se edita este archivo y se regenera la imagen (ver docs/diagramas/README.md).
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam roundCorner 0
+skinparam nodesep 60
+skinparam ranksep 80
+skinparam defaultFontName Arial
+skinparam ArrowColor #000000
+hide circle
+skinparam class {
+  BackgroundColor #90EE90
+  BorderColor #000000
+  BorderThickness 1
+  HeaderFontStyle bold
+  StereotypeFontColor #333333
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  BorderThickness 2
+  FontStyle bold
+  FontSize 14
+  BackgroundColor<<interfaces>> #F1E6F7
+  BackgroundColor<<application>> #E3EEF9
+  BackgroundColor<<domain>> #FFF8DC
+  BackgroundColor<<infrastructure>> #ECECEC
+  StereotypeFontColor #FFFFFF
+  StereotypeFontSize 1
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam legend {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+
+' ===================================================================== NOTIFICACIONES
+package "Microservicio Notificaciones" {
+  package "notificaciones.domain" as no_dom <<domain>> {
+    class InfoEvento <<record>> {
+      eventoId : UUID
+      nombre : String
+      fechaInicio : Instant
+      lugar : String
+    }
+    class EventoLocal <<record>> {
+      cancelado : boolean
+      ultimaFechaEmision : Instant
+      + esMasRecienteQue(fecha : Instant) : boolean
+    }
+    class CompradorEvento <<record>> {
+      boletaId : UUID
+      eventoId : UUID
+      compradorId : UUID
+      nombre : String
+      correo : String
+    }
+    class Correo <<record>> {
+      para : String
+      asunto : String
+      cuerpoHtml : String
+      qrPng : byte[]
+    }
+    enum TipoCambio <<enumeración>> {
+      PUBLICADO
+      FECHA
+      LUGAR
+      INVENTARIO
+      CANCELADO
+    }
+  }
+  package "notificaciones.application" as no_app <<application>> {
+    interface MensajeProcesadoRepository <<puerto>>
+    interface "EventoRepository" as EventoRepoNotif <<puerto>>
+    interface CompradorRepository <<puerto>>
+    interface RecordatorioRepository <<puerto>>
+    interface AlertaAforoRepository <<puerto>>
+    interface EnviadorCorreo <<puerto>> {
+      + enviar(correo : Correo)
+    }
+    interface GeneradorImagenQr <<puerto>> {
+      + generarPng(contenido : String) : byte[]
+    }
+    class ProcesarBoletaCompradaUseCase <<caso de uso>>
+    class ProcesarEventoActualizadoUseCase <<caso de uso>>
+    class ProcesarAforoCriticoUseCase <<caso de uso>>
+    class EnviarRecordatoriosUseCase <<caso de uso>>
+  }
+  package "notificaciones.interfaces" as no_int <<interfaces>> {
+    class ConsumidorBoletaComprada <<entrada>>
+    class ConsumidorEventoActualizado <<entrada>>
+    class ConsumidorAforoCritico <<entrada>>
+    class RecordatoriosJob <<programada>>
+  }
+  package "notificaciones.infrastructure" as no_inf <<infrastructure>> {
+    class SmtpEnviadorCorreo <<adaptador>>
+    class ZxingGeneradorImagenQr <<adaptador>>
+    class JpaCompradorRepository <<adaptador>>
+  }
+}
+
+EventoLocal "1" *-- "1" InfoEvento : datos >
+EventoLocal "1" -- "*" CompradorEvento : compradores >
+EnviadorCorreo ..> Correo : envía >
+ProcesarBoletaCompradaUseCase --> MensajeProcesadoRepository
+ProcesarBoletaCompradaUseCase --> CompradorRepository
+ProcesarEventoActualizadoUseCase --> MensajeProcesadoRepository
+ProcesarAforoCriticoUseCase --> MensajeProcesadoRepository
+ProcesarBoletaCompradaUseCase --> EventoRepoNotif
+ProcesarBoletaCompradaUseCase --> GeneradorImagenQr
+ProcesarBoletaCompradaUseCase --> EnviadorCorreo
+ProcesarEventoActualizadoUseCase --> CompradorRepository
+ProcesarEventoActualizadoUseCase --> EventoRepoNotif
+ProcesarEventoActualizadoUseCase --> EnviadorCorreo
+ProcesarEventoActualizadoUseCase ..> TipoCambio : clasifica
+ProcesarAforoCriticoUseCase --> AlertaAforoRepository
+ProcesarAforoCriticoUseCase --> EnviadorCorreo
+EnviarRecordatoriosUseCase --> RecordatorioRepository
+EnviarRecordatoriosUseCase --> EnviadorCorreo
+ConsumidorBoletaComprada --> ProcesarBoletaCompradaUseCase
+ConsumidorEventoActualizado --> ProcesarEventoActualizadoUseCase
+ConsumidorAforoCritico --> ProcesarAforoCriticoUseCase
+SmtpEnviadorCorreo ..|> EnviadorCorreo
+ZxingGeneradorImagenQr ..|> GeneradorImagenQr
+JpaCompradorRepository ..|> CompradorRepository
+RecordatoriosJob --> EnviarRecordatoriosUseCase
+
+
+no_int -[hidden]down- no_app
+no_app -[hidden]down- no_dom
+no_inf -[hidden]down- no_dom
+
+legend right
+  **Notación UML**
+  Línea con triángulo: herencia ("es un")
+  Punteada con triángulo: implementa una interfaz
+  Rombo lleno: composición · Rombo vacío: agregación
+  Flecha simple: usa / depende de
+  Números (1, *, 0..1): multiplicidad
+  ----
+  Los servicios no comparten clases: se comunican
+  por RabbitMQ (ADR-0001) y cada uno tiene su base (ADR-0002).
+  ----
+  **Capas (Clean Architecture)**
+  Morado: interfaces · Azul: application
+  Amarillo: domain · Gris: infrastructure
+  Los puertos (repositorios, publicadores) están en application:
+  domain no depende de nadie; application depende de domain.
+  «programada»: tarea que se ejecuta sola cada cierto tiempo.
+  ----
+  **Patrones y principios**
+  **DIP**: los casos de uso usan puertos (EnviadorCorreo, repositorios);
+     SMTP/Mailpit, PostgreSQL y RabbitMQ están en infrastructure.
+endlegend
+@enduml

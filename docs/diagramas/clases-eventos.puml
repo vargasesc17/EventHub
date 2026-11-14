@@ -1,0 +1,159 @@
+@startuml clases-eventos
+' Diagrama de clases de EventHub (#14). Editar y regenerar: ver README.md de esta carpeta.
+title EventHub · Clases del microservicio Eventos
+' Diagrama de clases del dominio de EventHub (#14)
+' Se edita este archivo y se regenera la imagen (ver docs/diagramas/README.md).
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam roundCorner 0
+skinparam nodesep 60
+skinparam ranksep 80
+skinparam defaultFontName Arial
+skinparam ArrowColor #000000
+hide circle
+skinparam class {
+  BackgroundColor #90EE90
+  BorderColor #000000
+  BorderThickness 1
+  HeaderFontStyle bold
+  StereotypeFontColor #333333
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  BorderThickness 2
+  FontStyle bold
+  FontSize 14
+  BackgroundColor<<interfaces>> #F1E6F7
+  BackgroundColor<<application>> #E3EEF9
+  BackgroundColor<<domain>> #FFF8DC
+  BackgroundColor<<infrastructure>> #ECECEC
+  StereotypeFontColor #FFFFFF
+  StereotypeFontSize 1
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam legend {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+
+' ===================================================================== EVENTOS
+package "Microservicio Eventos" {
+  package "eventos.domain" as ev_dom <<domain>> {
+    enum EstadoEvento <<enumeración>> {
+      BORRADOR
+      PUBLICADO
+      EN_CURSO
+      FINALIZADO
+      CANCELADO
+    }
+    enum TipoBoleta <<enumeración>> {
+      GENERAL
+      VIP
+      ESTUDIANTE
+      CORTESIA
+    }
+    enum TipoCambio <<enumeración>> {
+      PUBLICADO
+      FECHA
+      LUGAR
+      INVENTARIO
+      CANCELADO
+    }
+    class ValoresAnteriores <<record>> {
+      fechaInicio : Instant [0..1]
+      lugar : String [0..1]
+    }
+    class Evento {
+      - id : UUID
+      - nombre : String
+      - lugar : String
+      - fechaInicio : Instant
+      - aforoMaximo : int
+      - organizadorId : UUID
+      - organizadorCorreo : String
+      - estado : EstadoEvento
+      + publicar()
+      + iniciar()
+      + finalizar()
+      + cancelar()
+      + cambiarFecha(nueva : Instant)
+      + cambiarLugar(nuevo : String)
+      + validarCupos() : boolean
+    }
+    class CategoriaBoleta {
+      - tipo : TipoBoleta
+      - cupos : int
+      - precioBase : long
+    }
+  }
+  package "eventos.application" as ev_app <<application>> {
+    interface EventoRepository <<puerto>> {
+      + guardar(evento : Evento)
+      + buscar(id : UUID) : Optional<Evento>
+    }
+    interface PublicadorEventos <<puerto>> {
+      + eventoActualizado(evento : Evento, cambios : Set<TipoCambio>, anteriores : ValoresAnteriores)
+    }
+    class GestionarEventoUseCase <<caso de uso>> {
+      + crear(datos) : Evento
+      + publicar(id : UUID)
+      + modificar(id : UUID, cambios)
+      + cancelar(id : UUID)
+    }
+  }
+  package "eventos.interfaces" as ev_int <<interfaces>> {
+    class EventoController <<entrada>>
+  }
+  package "eventos.infrastructure" as ev_inf <<infrastructure>> {
+    class JdbcEventoRepository <<adaptador>>
+    class RabbitPublicadorEventos <<adaptador>>
+  }
+}
+
+Evento "1" *-- "1..*" CategoriaBoleta : tiene >
+Evento --> "1" EstadoEvento : estado
+CategoriaBoleta --> "1" TipoBoleta : tipo
+GestionarEventoUseCase --> EventoRepository
+GestionarEventoUseCase --> PublicadorEventos
+GestionarEventoUseCase ..> Evento : gestiona
+EventoController --> GestionarEventoUseCase
+JdbcEventoRepository ..|> EventoRepository
+RabbitPublicadorEventos ..|> PublicadorEventos
+PublicadorEventos ..> Evento : publica cambios de
+PublicadorEventos ..> TipoCambio
+PublicadorEventos ..> ValoresAnteriores
+
+
+ev_int -[hidden]down- ev_app
+ev_app -[hidden]down- ev_dom
+ev_inf -[hidden]down- ev_dom
+
+legend right
+  **Notación UML**
+  Línea con triángulo: herencia ("es un")
+  Punteada con triángulo: implementa una interfaz
+  Rombo lleno: composición · Rombo vacío: agregación
+  Flecha simple: usa / depende de
+  Números (1, *, 0..1): multiplicidad
+  ----
+  Los servicios no comparten clases: se comunican
+  por RabbitMQ (ADR-0001) y cada uno tiene su base (ADR-0002).
+  ----
+  **Capas (Clean Architecture)**
+  Morado: interfaces · Azul: application
+  Amarillo: domain · Gris: infrastructure
+  Los puertos (repositorios, publicadores) están en application:
+  domain no depende de nadie; application depende de domain.
+  «programada»: tarea que se ejecuta sola cada cierto tiempo.
+  ----
+  **Patrones y principios**
+  **DIP**: GestionarEventoUseCase depende de puertos (EventoRepository,
+     PublicadorEventos), no de PostgreSQL ni RabbitMQ.
+endlegend
+@enduml
