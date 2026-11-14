@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: ${BOLETERIA_DB_URL:jdbc:postgresql://localhost:5432/boleteria_db}
+    username: ${BOLETERIA_DB_USER}
+    password: ${BOLETERIA_DB_PASSWORD}
+  application:
+    name: boleteria
+
+management:
+  endpoints:
+    web:
+      base-path: /
+  endpoint:
+    health:
+      show-details: always
