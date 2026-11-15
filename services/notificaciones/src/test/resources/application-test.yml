@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password:
+  # En los tests no hay RabbitMQ: credenciales de relleno y los listeners no arrancan.
+  rabbitmq:
+    username: guest
+    password: guest
+    listener:
+      simple:
+        auto-startup: false
+
+management:
+  health:
+    rabbit:
+      enabled: false
