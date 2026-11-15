@@ -65,6 +65,18 @@ services:
       retries: 5
       start_period: 30s
 
+  #Servidor Web, Frontend nginx
+  frontend:
+    image: nginx:latest
+    container_name: eventhub-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html
+    depends_on:
+      - eventos
+    restart: always
+
 volumes:
   rabbitmq_data:
   postgres_data:

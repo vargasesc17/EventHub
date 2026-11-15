@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Clases de tipografía que exportó Figma */
+.font-inter-bold {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+}
+
+.font-inter-semibold {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+}
