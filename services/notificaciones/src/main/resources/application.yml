@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: ${NOTIFICACIONES_DB_URL:jdbc:postgresql://localhost:5432/notificaciones_db}
+    username: ${NOTIFICACIONES_DB_USER}
+    password: ${NOTIFICACIONES_DB_PASSWORD}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: 5672
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+  application:
+    name: notificaciones
+
+management:
+  endpoints:
+    web:
+      base-path: /
+  endpoint:
+    health:
+      show-details: always
