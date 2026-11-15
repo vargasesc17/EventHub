@@ -5,6 +5,9 @@ spring:
     password: ${EVENTOS_DB_PASSWORD}
   application:
     name: eventos
+  jpa:
+    hibernate:
+      ddl-auto: update
 
 management:
   endpoints:

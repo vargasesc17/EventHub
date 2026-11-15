@@ -1,8 +1,7 @@
 @startuml clases-eventos
-' Diagrama de clases de EventHub (#14). Editar y regenerar: ver README.md de esta carpeta.
-title EventHub · Clases del microservicio Eventos
-' Diagrama de clases del dominio de EventHub (#14)
+' Diagrama de clases de EventHub (#14, actualizado con la implementación del #19).
 ' Se edita este archivo y se regenera la imagen (ver docs/diagramas/README.md).
+title EventHub · Clases del microservicio Eventos
 
 skinparam shadowing false
 skinparam linetype ortho
@@ -78,57 +77,103 @@ package "Microservicio Eventos" {
       - organizadorId : UUID
       - organizadorCorreo : String
       - estado : EstadoEvento
+      + {static} crear(datos) : Evento
+      + {static} reconstruir(id, estado, datos) : Evento
+      + editar(datos)
       + publicar()
       + iniciar()
       + finalizar()
       + cancelar()
       + cambiarFecha(nueva : Instant)
       + cambiarLugar(nuevo : String)
-      + validarCupos() : boolean
     }
-    class CategoriaBoleta {
-      - tipo : TipoBoleta
-      - cupos : int
-      - precioBase : long
+    class CategoriaBoleta <<record>> {
+      tipo : TipoBoleta
+      cupos : int
+      precioBase : long
     }
+    class ReglaDeNegocioException <<excepción>>
   }
   package "eventos.application" as ev_app <<application>> {
     interface EventoRepository <<puerto>> {
       + guardar(evento : Evento)
-      + buscar(id : UUID) : Optional<Evento>
+      + buscarPorId(id : UUID) : Optional<Evento>
+      + buscarPublicadosDesde(ahora : Instant) : List<Evento>
     }
     interface PublicadorEventos <<puerto>> {
       + eventoActualizado(evento : Evento, cambios : Set<TipoCambio>, anteriores : ValoresAnteriores)
     }
     class GestionarEventoUseCase <<caso de uso>> {
-      + crear(datos) : Evento
+      + crear(datos : CrearEventoCommand) : Evento
+      + editar(id : UUID, datos : EditarEventoCommand) : Evento
       + publicar(id : UUID)
-      + modificar(id : UUID, cambios)
       + cancelar(id : UUID)
     }
+    class ConsultarEventosUseCase <<caso de uso>> {
+      + buscarPorId(id : UUID) : Evento
+      + catalogo() : List<Evento>
+    }
+    class CrearEventoCommand <<record>>
+    class EditarEventoCommand <<record>>
+    class EventoNoEncontradoException <<excepción>>
   }
   package "eventos.interfaces" as ev_int <<interfaces>> {
-    class EventoController <<entrada>>
+    class EventoController <<entrada>> {
+      + crear(request) : 201
+      + consultar(id) : 200
+      + editar(id, request) : 200
+      + catalogo() : 200
+    }
+    class ManejadorDeErrores <<entrada>>
   }
   package "eventos.infrastructure" as ev_inf <<infrastructure>> {
-    class JdbcEventoRepository <<adaptador>>
+    class JpaEventoRepository <<adaptador>>
+    class EventoMapper
+    class EventoEntity <<@Entity>>
+    class CategoriaBoletaEmbeddable <<@Embeddable>>
+    interface EventoJpaRepository <<Spring Data>>
+    class CasosDeUsoConfig <<configuración>>
     class RabbitPublicadorEventos <<adaptador>>
   }
 }
 
+' ------------------------------------------------------------------ domain
 Evento "1" *-- "1..*" CategoriaBoleta : tiene >
 Evento --> "1" EstadoEvento : estado
+Evento ..> ReglaDeNegocioException : lanza
 CategoriaBoleta --> "1" TipoBoleta : tipo
+CategoriaBoleta ..> ReglaDeNegocioException : lanza
+
+' ------------------------------------------------------------- application
 GestionarEventoUseCase --> EventoRepository
 GestionarEventoUseCase --> PublicadorEventos
 GestionarEventoUseCase ..> Evento : gestiona
-EventoController --> GestionarEventoUseCase
-JdbcEventoRepository ..|> EventoRepository
-RabbitPublicadorEventos ..|> PublicadorEventos
+GestionarEventoUseCase ..> CrearEventoCommand
+GestionarEventoUseCase ..> EditarEventoCommand
+GestionarEventoUseCase ..> EventoNoEncontradoException : lanza
+ConsultarEventosUseCase --> EventoRepository
+ConsultarEventosUseCase ..> EventoNoEncontradoException : lanza
 PublicadorEventos ..> Evento : publica cambios de
 PublicadorEventos ..> TipoCambio
 PublicadorEventos ..> ValoresAnteriores
 
+' -------------------------------------------------------------- interfaces
+EventoController --> GestionarEventoUseCase
+EventoController --> ConsultarEventosUseCase
+ManejadorDeErrores ..> ReglaDeNegocioException : 422
+ManejadorDeErrores ..> EventoNoEncontradoException : 404
+
+' ---------------------------------------------------------- infrastructure
+JpaEventoRepository ..|> EventoRepository
+JpaEventoRepository --> EventoJpaRepository
+JpaEventoRepository ..> EventoMapper
+EventoMapper ..> EventoEntity
+EventoMapper ..> Evento : reconstruir
+EventoJpaRepository ..> EventoEntity
+EventoEntity "1" *-- "1..*" CategoriaBoletaEmbeddable
+CasosDeUsoConfig ..> GestionarEventoUseCase : crea
+CasosDeUsoConfig ..> ConsultarEventosUseCase : crea
+RabbitPublicadorEventos ..|> PublicadorEventos
 
 ev_int -[hidden]down- ev_app
 ev_app -[hidden]down- ev_dom
@@ -150,10 +195,20 @@ legend right
   Amarillo: domain · Gris: infrastructure
   Los puertos (repositorios, publicadores) están en application:
   domain no depende de nadie; application depende de domain.
-  «programada»: tarea que se ejecuta sola cada cierto tiempo.
   ----
   **Patrones y principios**
-  **DIP**: GestionarEventoUseCase depende de puertos (EventoRepository,
+  **DIP**: los casos de uso dependen de puertos (EventoRepository,
      PublicadorEventos), no de PostgreSQL ni RabbitMQ.
+  **Dominio puro**: Evento no tiene anotaciones JPA; EventoEntity y
+     EventoMapper viven en infrastructure (lo verifica ArquitecturaTest).
+  **ISP / CQS**: ConsultarEventosUseCase (lectura) separado de
+     GestionarEventoUseCase (escritura).
+  **Invariante**: la suma de cupos no supera el aforo; Evento la valida
+     al crear y al editar, así no existe un evento inválido.
+  ----
+  **Estado de la implementación**
+  Implementado en #19: crear, editar, consultar y catálogo.
+  Diseño pendiente (#20): publicar, iniciar, finalizar, cancelar,
+     cambiarFecha, cambiarLugar, PublicadorEventos y su adaptador.
 endlegend
 @enduml
