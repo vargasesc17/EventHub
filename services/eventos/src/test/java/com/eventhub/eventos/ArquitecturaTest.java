@@ -14,17 +14,14 @@ public class ArquitecturaTest {
     static final ArchRule domainNoDependeDeNadie = noClasses().that().resideInAPackage("..domain..")
             .should().dependOnClassesThat()
             .resideInAnyPackage("..application..", "..infrastructure..", "..interfaces..",
-                    "org.springframework..", "jakarta..", "org.hibernate..")
-            .allowEmptyShould(true);
+                    "org.springframework..", "jakarta..", "org.hibernate..");
 
     @ArchTest
     static final ArchRule applicationNoDependeDeInfNiInt = noClasses().that().resideInAPackage("..application..")
             .should().dependOnClassesThat()
-            .resideInAnyPackage("..infrastructure..", "..interfaces..")
-            .allowEmptyShould(true);
+            .resideInAnyPackage("..infrastructure..", "..interfaces..");
 
     @ArchTest
     static final ArchRule interfacesNoDependeDeInf = noClasses().that().resideInAPackage("..interfaces..")
-            .should().dependOnClassesThat().resideInAnyPackage("..infrastructure..")
-            .allowEmptyShould(true);
+            .should().dependOnClassesThat().resideInAnyPackage("..infrastructure..");
 }
