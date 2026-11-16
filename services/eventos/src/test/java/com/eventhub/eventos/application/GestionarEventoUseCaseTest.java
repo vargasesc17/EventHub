@@ -16,8 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class GestionarEventoUseCaseTest {
 
     private final EventoRepositoryEnMemoria repositorio = new EventoRepositoryEnMemoria();
-    private final GestionarEventoUseCase casoDeUso = new GestionarEventoUseCase(repositorio);
-    private final Instant fechaFutura = Instant.now().plus(30, ChronoUnit.DAYS);
+    private final GestionarEventoUseCase casoDeUso =
+            new GestionarEventoUseCase(repositorio, new PublicadorEventosEnMemoria());    private final Instant fechaFutura = Instant.now().plus(30, ChronoUnit.DAYS);
 
     private CrearEventoCommand datosValidos() {
         return new CrearEventoCommand("Concierto", "Movistar Arena", fechaFutura, 1000,
