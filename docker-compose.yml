@@ -53,17 +53,16 @@ services:
       EVENTOS_DB_USER: ${EVENTOS_DB_USER}
       EVENTOS_DB_PASSWORD: ${EVENTOS_DB_PASSWORD}
       EVENTOS_DB_URL: jdbc:postgresql://postgres:5432/eventos_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
       - "8081:8080"
     depends_on:
       postgres:
         condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      rabbitmq:
+        condition: service_healthy
 
   boleteria:
     build: ./services/boleteria
