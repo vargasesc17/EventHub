@@ -96,20 +96,23 @@ package "Microservicio Boletería" {
     class FabricaBoletaCortesia
     class ParametrosPrecio <<record>> {
       fechaLimite : Instant [0..1]
-      descuento : double [0..1]
-      incrementoPorOcupacion : double [0..1]
+      descuentoPorcentaje : Integer [0..1]
+      incrementoMaximoPorcentaje : Integer [0..1]
+    }
+    class ContextoPrecio <<record>> {
+      precioBase : long
+      cupos : int
+      vendidas : int
+      fechaCompra : Instant
+      parametros : ParametrosPrecio
     }
     interface PrecioStrategy <<interfaz>> {
-      + calcular(inventario : InventarioCategoria, fechaCompra : Instant) : long
+      + tipo() : TipoPrecio
+      + calcular(contexto : ContextoPrecio) : long
     }
     class PrecioFijo
-    class PrecioEarlyBird {
-      - fechaLimite : Instant
-      - descuento : double
-    }
-    class PrecioDinamico {
-      - incrementoPorOcupacion : double
-    }
+    class PrecioEarlyBird
+    class PrecioDinamico
     class InventarioCategoria {
       - eventoId : UUID
       - categoria : TipoBoleta
@@ -240,6 +243,7 @@ PrecioStrategy <|.. PrecioDinamico
 Boleta "1" -- "0..1" CheckIn : registra ingreso >
 Boleta "1" -- "0..1" Reserva : se aparta con >
 Comprador "1" -- "*" Boleta : compra >
+PrecioStrategy ..> ContextoPrecio
 
 CompraBoletaService <|.. ComprarBoletaUseCase
 CheckInService <|.. CheckInUseCase
