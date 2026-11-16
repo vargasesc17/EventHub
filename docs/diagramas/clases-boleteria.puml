@@ -85,11 +85,13 @@ package "Microservicio Boletería" {
       - emitidaPor : UUID
     }
     abstract class FabricaBoleta <<abstracta>> {
+      + {abstract} tipo() : TipoBoleta
       + emitir(compra : Compra, precio : long) : Boleta
-      # {abstract} crearBoleta(compra : Compra) : Boleta
+      # {abstract} crearBoleta(compra : Compra, precio : long) : Boleta
     }
     class FabricaBoletaGeneral
     class FabricaBoletaVIP
+    class ReglaDeNegocioException <<excepción>>
     class FabricaBoletaEstudiante
     class FabricaBoletaCortesia
     class ParametrosPrecio <<record>> {
