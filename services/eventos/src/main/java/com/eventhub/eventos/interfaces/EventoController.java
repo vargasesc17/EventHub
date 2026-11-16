@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PatchMapping;
 
 import java.net.URI;
 import java.util.List;
@@ -43,6 +44,31 @@ public class EventoController {
     @PutMapping("/{id}")
     public EventoResponse editar(@PathVariable UUID id, @Valid @RequestBody EditarEventoRequest request) {
         return EventoResponse.desde(gestionar.editar(id, request.aCommand()));
+    }
+
+    @PostMapping("/{id}/publicar")
+    public EventoResponse publicar(@PathVariable UUID id) {
+        return EventoResponse.desde(gestionar.publicar(id));
+    }
+
+    @PostMapping("/{id}/iniciar")
+    public EventoResponse iniciar(@PathVariable UUID id) {
+        return EventoResponse.desde(gestionar.iniciar(id));
+    }
+
+    @PostMapping("/{id}/finalizar")
+    public EventoResponse finalizar(@PathVariable UUID id) {
+        return EventoResponse.desde(gestionar.finalizar(id));
+    }
+
+    @PostMapping("/{id}/cancelar")
+    public EventoResponse cancelar(@PathVariable UUID id) {
+        return EventoResponse.desde(gestionar.cancelar(id));
+    }
+
+    @PatchMapping("/{id}")
+    public EventoResponse reprogramar(@PathVariable UUID id, @RequestBody ReprogramarEventoRequest request) {
+        return EventoResponse.desde(gestionar.reprogramar(id, request.aCommand()));
     }
 
     @GetMapping("/catalogo")
