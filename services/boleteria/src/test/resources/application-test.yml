@@ -15,3 +15,7 @@ management:
   health:
     rabbit:
       enabled: false
+
+boleteria:
+  qr:
+    secreto: secreto-solo-para-tests

@@ -25,3 +25,9 @@ management:
   endpoint:
     health:
       show-details: always
+
+boleteria:
+  qr:
+    secreto: ${BOLETERIA_QR_SECRETO}   # ADR-0004: nunca en el código
+  alerta:
+    umbral: 90                         # ADR-0003: configurable
