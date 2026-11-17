@@ -2,8 +2,9 @@
 # Levantar:  docker compose up -d
 # Apagar:    docker compose down        (agrega -v para borrar también los datos)
 #
-# Eventos incluido (#16)
-# Los microservicios y el frontend se agregan en sus propios issues (#16-#18, #38).
+# Microservicios incluidos: Eventos (#16), Boletería (#17) y Notificaciones (#18).
+# Mailpit (#25) atrapa los correos de prueba: http://localhost:8025
+# El frontend se agrega en su propio issue (#38).
 
 services:
   rabbitmq:
@@ -53,8 +54,32 @@ services:
       EVENTOS_DB_USER: ${EVENTOS_DB_USER}
       EVENTOS_DB_PASSWORD: ${EVENTOS_DB_PASSWORD}
       EVENTOS_DB_URL: jdbc:postgresql://postgres:5432/eventos_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
       - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  boleteria:
+    build: ./services/boleteria
+    container_name: eventhub-boleteria
+    environment:
+      BOLETERIA_DB_USER: ${BOLETERIA_DB_USER}
+      BOLETERIA_DB_PASSWORD: ${BOLETERIA_DB_PASSWORD}
+      BOLETERIA_DB_URL: jdbc:postgresql://postgres:5432/boleteria_db
+    ports:
+      - "8082:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -65,17 +90,51 @@ services:
       retries: 5
       start_period: 30s
 
-  #Servidor Web, Frontend nginx
-  frontend:
-    image: nginx:latest
+  notificaciones:
+    build: ./services/notificaciones
+    container_name: eventhub-notificaciones
+    environment:
+      NOTIFICACIONES_DB_USER: ${NOTIFICACIONES_DB_USER}
+      NOTIFICACIONES_DB_PASSWORD: ${NOTIFICACIONES_DB_PASSWORD}
+      NOTIFICACIONES_DB_URL: jdbc:postgresql://postgres:5432/notificaciones_db
+      RABBITMQ_HOST: rabbitmq          # dentro de Docker el host es el nombre del servicio
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+    ports:
+      - "8083:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Servidor de correo falso: atrapa los correos de Notificaciones para verlos en el navegador
+  # (http://localhost:8025). No envía nada de verdad (#25).
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: eventhub-mailpit
+    ports:
+      - "8025:8025"   # página web para ver los correos
+      - "1025:1025"   # SMTP: aquí envía Notificaciones
+
+frontend:
+    build: ./frontend
     container_name: eventhub-frontend
     ports:
       - "8080:80"
-    volumes:
-      - ./frontend/dist:/usr/share/nginx/html
     depends_on:
       - eventos
-    restart: always
+      - boleteria
 
 volumes:
   rabbitmq_data:

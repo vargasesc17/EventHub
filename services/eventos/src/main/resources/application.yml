@@ -5,6 +5,14 @@ spring:
     password: ${EVENTOS_DB_PASSWORD}
   application:
     name: eventos
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: 5672
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
 
 management:
   endpoints:

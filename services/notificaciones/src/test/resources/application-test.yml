@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password:
+  # En los tests no hay RabbitMQ: credenciales de relleno y los listeners no arrancan.
+  rabbitmq:
+    username: guest
+    password: guest
+    listener:
+      simple:
+        auto-startup: false
+  # Tampoco hay servidor de correo: solo se crea el JavaMailSender, no se conecta.
+  mail:
+    host: localhost
+
+management:
+  health:
+    rabbit:
+      enabled: false
+    mail:
+      enabled: false
