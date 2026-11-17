@@ -44,4 +44,14 @@ public class JpaAforoRepository implements AforoRepository {
     public void bloquearVentas(UUID eventoId) {
         jpa.bloquearVentas(eventoId);
     }
+
+    @Override
+    public void sumarVenta(UUID eventoId) {
+        jpa.sumarVenta(eventoId);
+    }
+
+    @Override
+    public boolean marcarAlertaSiAlcanzaUmbral(UUID eventoId, int umbralPorcentaje) {
+        return jpa.marcarAlerta(eventoId, umbralPorcentaje) == 1;
+    }
 }

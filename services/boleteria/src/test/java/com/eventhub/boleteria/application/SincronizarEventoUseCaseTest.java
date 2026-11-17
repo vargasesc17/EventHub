@@ -1,19 +1,12 @@
 package com.eventhub.boleteria.application;
 
-import com.eventhub.boleteria.domain.AforoEvento;
-import com.eventhub.boleteria.domain.InventarioCategoria;
 import com.eventhub.boleteria.domain.TipoBoleta;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -24,9 +17,9 @@ class SincronizarEventoUseCaseTest {
     private final MensajesEnMemoria mensajes = new MensajesEnMemoria();
     private final AforosEnMemoria aforos = new AforosEnMemoria();
     private final InventariosEnMemoria inventarios = new InventariosEnMemoria();
+
     private final SincronizarEventoUseCase casoDeUso = new SincronizarEventoUseCase(mensajes, aforos,
             inventarios, Clock.fixed(Instant.parse("2030-01-01T00:00:00Z"), ZoneOffset.UTC));
-
     private final UUID eventoId = UUID.randomUUID();
     private final Instant fecha = Instant.parse("2030-06-01T20:00:00Z");
 
@@ -123,56 +116,5 @@ class SincronizarEventoUseCaseTest {
 
         assertEquals(Resultado.IGNORADO, casoDeUso.ejecutar(mensaje));
         assertEquals(Resultado.DUPLICADO, casoDeUso.ejecutar(mensaje));
-    }
-
-    // ------------------------------------------------- puertos en memoria
-
-    static class MensajesEnMemoria implements MensajeProcesadoRepository {
-        private final Set<UUID> procesados = new HashSet<>();
-
-        @Override
-        public boolean yaProcesado(UUID messageId) { return procesados.contains(messageId); }
-
-        @Override
-        public void registrar(UUID messageId, String tipo, Instant procesadoEn) { procesados.add(messageId); }
-    }
-
-    static class AforosEnMemoria implements AforoRepository {
-        private final Map<UUID, AforoEvento> aforos = new HashMap<>();
-
-        @Override
-        public boolean existe(UUID eventoId) { return aforos.containsKey(eventoId); }
-
-        @Override
-        public void crear(AforoEvento aforo) { aforos.put(aforo.eventoId(), aforo); }
-
-        @Override
-        public Optional<AforoEvento> buscar(UUID eventoId) { return Optional.ofNullable(aforos.get(eventoId)); }
-
-        @Override
-        public void actualizarProgramacion(UUID eventoId, Instant fechaInicio, String lugar) {
-            var a = aforos.get(eventoId);
-            aforos.put(eventoId, new AforoEvento(a.eventoId(), a.nombre(), fechaInicio, lugar, a.organizadorId(),
-                    a.organizadorCorreo(), a.aforoMaximo(), a.vendidas(), a.alertaEnviada(), a.ventasBloqueadas()));
-        }
-
-        @Override
-        public void bloquearVentas(UUID eventoId) {
-            var a = aforos.get(eventoId);
-            aforos.put(eventoId, new AforoEvento(a.eventoId(), a.nombre(), a.fechaInicio(), a.lugar(), a.organizadorId(),
-                    a.organizadorCorreo(), a.aforoMaximo(), a.vendidas(), a.alertaEnviada(), true));
-        }
-    }
-
-    static class InventariosEnMemoria implements InventarioRepository {
-        private final List<InventarioCategoria> inventarios = new ArrayList<>();
-
-        @Override
-        public void crear(List<InventarioCategoria> nuevos) { inventarios.addAll(nuevos); }
-
-        @Override
-        public List<InventarioCategoria> buscarPorEvento(UUID eventoId) {
-            return inventarios.stream().filter(i -> i.eventoId().equals(eventoId)).toList();
-        }
     }
 }
