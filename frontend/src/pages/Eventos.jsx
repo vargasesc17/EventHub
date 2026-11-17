@@ -1,18 +1,26 @@
 import { useEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import logoSvg from "../assets/eventhubcolibri.svg";
 import profileSvg from "../assets/account.svg";
+import EventCard from "../components/EventCard";
 
 const events = [
-  { id: 1, name: "Lorem ipsum dolor sit" },
-  { id: 2, name: "Lorem ipsum dolor sit" },
-  { id: 3, name: "Lorem ipsum dolor sit" },
+  { id: 1, titulo: "Lorem ipsum dolor sit", imagen: "" },
+  { id: 2, titulo: "Lorem ipsum dolor sit", imagen: "" },
+  { id: 3, titulo: "Lorem ipsum dolor sit", imagen: "" },
+  { id: 4, titulo: "Lorem ipsum dolor sit", imagen: "" },
 ];
 
-const navigation = ["Boletas", "Eventos", "Notificaciones", "Check-in"];
+const navigation = [
+  { name: "Boletas", path: "/boletas" },
+  { name: "Eventos", path: "/eventos" },
+  { name: "Notificaciones", path: "/notificaciones" },
+  { name: "Check-in", path: "/checkin" },
+];
 
 export default function Eventos() {
-  const [activeSection, setActiveSection] = useState("Eventos");
-  const [verifiedEvent, setVerifiedEvent] = useState(null);
+  const location = useLocation(); // <-- Importado correctamente arriba
+  const [selectedEventId, setSelectedEventId] = useState(null);
   const [accountOpen, setAccountOpen] = useState(false);
   const accountMenuRef = useRef(null);
 
@@ -29,38 +37,43 @@ export default function Eventos() {
     return () => window.removeEventListener("mousedown", closeMenu);
   }, [accountOpen]);
 
+  const handleSelectEvent = (id) => {
+    setSelectedEventId(selectedEventId === id ? null : id);
+  };
+
   return (
-    <div className="min-h-dvh bg-[#373d4d] text-[#0f0140]">
+    <div className="min-h-dvh bg-[#7F8081] text-[#0f0140]">
       {/* Header */}
       <header className="relative z-20 h-[125px] bg-[#0f0140] text-white">
         <div className="mx-auto flex h-full max-w-[1192px] items-center justify-between px-6 lg:px-0">
-          <a
+          <Link
+            to="/"
             className="flex items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-            href="#main-content"
-            aria-label="EventHub, ir al contenido principal"
+            aria-label="Ir al inicio"
           >
             <img src={logoSvg} width="64" height="59" alt="EventHub" />
             <span className="font-bold text-[30px] leading-none sm:text-[36px]">
               EventHub
             </span>
-          </a>
+          </Link>
 
           <nav className="hidden md:flex items-center gap-8" aria-label="Navegación principal">
-            {navigation.map((item) => (
-              <a
-                key={item}
-                className={`font-semibold text-[20px] transition-colors ${
-                  activeSection === item ? "text-white underline underline-offset-8" : "text-white/80 hover:text-white"
-                }`}
-                href={`#${item.toLowerCase()}`}
-                onClick={(event) => {
-                  event.preventDefault();
-                  setActiveSection(item);
-                }}
-              >
-                {item}
-              </a>
-            ))}
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className={`font-semibold text-[20px] transition-colors px-4 py-2 rounded-lg ${
+                    isActive 
+                      ? "bg-[#070024] text-white shadow-inner" 
+                      : "text-white/80 hover:bg-[#070024] hover:text-white"
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="relative" ref={accountMenuRef}>
@@ -97,39 +110,23 @@ export default function Eventos() {
       </header>
 
       {/* Main Content */}
-      <main id="main-content" className="mx-auto min-h-[calc(100dvh-125px)] max-w-[1090px] bg-[#e5e5e7] px-6 pt-[41px] pb-16 sm:px-10 lg:px-[58px]">
+      <main id="main-content" className="mx-auto min-h-[calc(100dvh-125px)] max-w-[1580px] bg-[#e5e5e7] px-6 pt-[41px] pb-16 sm:px-10 lg:px-[58px]">
         <h1 className="font-bold text-[34px] leading-normal sm:text-[40px] text-[#0f0140]">
           Lorem ipsum dolor sit
         </h1>
 
-        <section className="mt-[20px] grid grid-cols-1 gap-x-[34px] gap-y-8 sm:grid-cols-2 lg:grid-cols-3" aria-label="Eventos disponibles">
-          {events.map((event) => {
-            const isVerified = verifiedEvent === event.id;
-
-            return (
-              <article key={event.id} className="flex flex-col">
-                <div className="h-[207px] rounded-[21px] bg-white shadow-sm" aria-hidden="true" />
-                <h2 className="mt-[13px] px-[17px] text-[24px] font-semibold text-[#0f0140] leading-normal">
-                  {event.name}
-                </h2>
-                <div className="mt-3 px-[17px]">
-                  <button
-                    type="button"
-                    className={`rounded-xl px-5 py-2.5 text-white font-medium text-sm transition-all shadow-md ${
-                      isVerified ? "bg-[#38128c]" : "bg-[#0f0140] hover:bg-[#20046b]"
-                    }`}
-                    aria-pressed={isVerified}
-                    onClick={() => setVerifiedEvent(isVerified ? null : event.id)}
-                  >
-                    <span>{isVerified ? "Aforo verificado" : "Verificar aforo"}</span>
-                  </button>
-                </div>
-              </article>
-            );
-          })}
+        <section className="mt-[20px] grid grid-cols-1 gap-x-[34px] gap-y-8 sm:grid-cols-2 lg:grid-cols-4" aria-label="Eventos disponibles">
+          {events.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              isSelected={selectedEventId === event.id}
+              onSelect={handleSelectEvent}
+            />
+          ))}
         </section>
 
-        <div className="mt-8">
+        <div className="mt-8 px-2 sm:px-0">
           <button
             type="button"
             className="rounded-xl bg-[#0f0140] px-6 py-3 text-white font-semibold shadow-md hover:bg-[#20046b] transition-all"
@@ -140,9 +137,9 @@ export default function Eventos() {
         </div>
 
         <p className="sr-only" aria-live="polite">
-          {verifiedEvent
-            ? `Aforo verificado para el evento ${verifiedEvent}`
-            : "Ningún aforo verificado"}
+          {selectedEventId
+            ? `Evento con ID ${selectedEventId} seleccionado`
+            : "Ningún evento seleccionado"}
         </p>
       </main>
     </div>

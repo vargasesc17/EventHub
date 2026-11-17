@@ -1,18 +1,26 @@
 import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logoSvg from "../assets/eventhubcolibri.svg";
 import profileSvg from "../assets/account.svg";
+import EventCard from "../components/EventCard";
 
-const events = [
-  { id: 1, name: "Lorem ipsum dolor sit" },
-  { id: 2, name: "Lorem ipsum dolor sit" },
-  { id: 3, name: "Lorem ipsum dolor sit" },
+const eventsList = [
+  { id: 1, titulo: "Conferencia Tech 2026", imagen: "" },
+  { id: 2, titulo: "Taller de React y Tailwind", imagen: "" },
+  { id: 3, titulo: "Meetup de IoT y Hardware", imagen: "" },
 ];
 
-const navigation = ["Boletas", "Eventos", "Notificaciones", "Check-in"];
+const navigation = [
+  { name: "Boletas", path: "/boletas" },
+  { name: "Eventos", path: "/eventos" },
+  { name: "Notificaciones", path: "/notificaciones" },
+  { name: "Check-in", path: "/checkin" },
+];
 
 export default function CheckinSelector() {
-  const [activeSection, setActiveSection] = useState("Check-in");
-  const [monitoredEvent, setMonitoredEvent] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [selectedEventId, setSelectedEventId] = useState(null);
   const [accountOpen, setAccountOpen] = useState(false);
   const accountMenuRef = useRef(null);
 
@@ -29,60 +37,69 @@ export default function CheckinSelector() {
     return () => window.removeEventListener("mousedown", closeMenu);
   }, [accountOpen]);
 
-  return (
-    <div className="app-shell" data-node-id="2016:243">
-      <header className="site-header" data-node-id="2016:253">
-        <div className="header-content">
-          <a
-            className="brand"
-            href="#main-content"
-            aria-label="EventHub, ir al contenido principal"
-            data-node-id="2016:254"
-          >
-            <img
-              src={logoSvg}
-              width="64"
-              height="59"
-              alt="EventHub"
-              data-node-id="2016:255"
-            />
-            <span data-node-id="2016:267">EventHub</span>
-          </a>
+  const handleSelectEvent = (id) => {
+    setSelectedEventId(id);
+    // Redirige automáticamente al detalle de check-in de ese evento específico
+    navigate(`/checkin/${id}`);
+  };
 
-          <nav className="main-nav" aria-label="Navegación principal" data-node-id="2016:268">
-            {navigation.map((item) => (
-              <a
-                key={item}
-                className={activeSection === item ? "active" : ""}
-                href={item === "Check-in" ? "#main-content" : `#${item.toLowerCase()}`}
-                onClick={(event) => {
-                  if (item !== "Check-in") event.preventDefault();
-                  setActiveSection(item);
-                }}
-              >
-                {item}
-              </a>
-            ))}
+  return (
+    <div className="min-h-dvh bg-[#7F8081] text-[#0f0140]">
+      {/* Header corporativo */}
+      <header className="relative z-20 h-[125px] bg-[#0f0140] text-white">
+        <div className="mx-auto flex h-full max-w-[1192px] items-center justify-between px-6 lg:px-0">
+          <Link
+            to="/"
+            className="flex items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+          >
+            <img src={logoSvg} width="64" height="59" alt="EventHub" />
+            <span className="font-bold text-[30px] leading-none sm:text-[36px]">
+              EventHub
+            </span>
+          </Link>
+
+          <nav className="hidden md:flex items-center gap-8" aria-label="Navegación principal">
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className={`font-semibold text-[20px] transition-colors px-4 py-2 rounded-lg ${
+                    isActive ? "bg-[#070024] text-white shadow-inner" : "text-white/80 hover:bg-[#070024] hover:text-white"
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
           </nav>
 
-          <div className="account-area" ref={accountMenuRef}>
+          <div className="relative" ref={accountMenuRef}>
             <button
-              className="account-button"
+              className="flex size-[50px] items-center justify-center rounded-full transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               type="button"
               aria-label="Abrir menú de cuenta"
               aria-expanded={accountOpen}
               onClick={() => setAccountOpen((open) => !open)}
-              data-node-id="2016:284"
             >
-              <img src={profileSvg} width="50" height="50" alt="Mi cuenta" />
+              <img src={profileSvg} width="50" height="50" alt="Mi cuenta" className="rounded-full" />
             </button>
             {accountOpen && (
-              <div className="account-menu" role="menu">
-                <strong>Mi cuenta</strong>
-                <button type="button" role="menuitem" onClick={() => setAccountOpen(false)}>
+              <div className="absolute top-[62px] right-0 w-48 rounded-xl bg-white p-2 text-[16px] text-[#0f0140] shadow-xl">
+                <strong className="block px-3 py-1 text-xs text-gray-500">Mi cuenta</strong>
+                <button
+                  type="button"
+                  className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#e5e5e7] transition-colors"
+                  onClick={() => setAccountOpen(false)}
+                >
                   Ver perfil
                 </button>
-                <button type="button" role="menuitem" onClick={() => setAccountOpen(false)}>
+                <button
+                  type="button"
+                  className="w-full rounded-lg px-3 py-2 text-left hover:bg-[#e5e5e7] transition-colors text-red-600"
+                  onClick={() => setAccountOpen(false)}
+                >
                   Cerrar sesión
                 </button>
               </div>
@@ -91,42 +108,22 @@ export default function CheckinSelector() {
         </div>
       </header>
 
-      <main id="main-content" className="content" data-node-id="2016:273">
-        <h1 data-node-id="2016:274">Lorem ipsum dolor sit</h1>
+      {/* Main Content */}
+      <main id="main-content" className="mx-auto min-h-[calc(100dvh-125px)] max-w-[1580px] bg-[#e5e5e7] px-6 pt-[41px] pb-16 sm:px-10 lg:px-[58px]">
+        <h1 className="font-bold text-[34px] leading-normal sm:text-[40px] text-[#0f0140]">
+          Selecciona el evento para Check-in
+        </h1>
 
-        <section className="event-grid" aria-label="Eventos disponibles">
-          {events.map((event, index) => {
-            const isMonitored = monitoredEvent === event.id;
-            const eventNodeIds = [
-              ["2016:275", "2016:277", "2016:276", "2016:290", "2016:291"],
-              ["2016:281", "2016:283", "2016:282", "2016:293", "2016:294"],
-              ["2016:278", "2016:280", "2016:279", "2016:245", "2016:246"],
-            ][index];
-
-            return (
-              <article className="event-card" key={event.id} data-node-id={eventNodeIds[0]}>
-                <div className="event-image" aria-hidden="true" data-node-id={eventNodeIds[1]} />
-                <h2 data-node-id={eventNodeIds[2]}>{event.name}</h2>
-                <button
-                  type="button"
-                  className={isMonitored ? "monitor-button monitored" : "monitor-button"}
-                  aria-pressed={isMonitored}
-                  onClick={() => setMonitoredEvent(isMonitored ? null : event.id)}
-                  data-node-id={eventNodeIds[3]}
-                >
-                  <span data-node-id={eventNodeIds[4]}>
-                    {isMonitored ? "Monitoreando check-in" : "Monitoreo de check-in"}
-                  </span>
-                </button>
-              </article>
-            );
-          })}
+        <section className="mt-[20px] grid grid-cols-1 gap-x-[34px] gap-y-8 sm:grid-cols-2 lg:grid-cols-4" aria-label="Eventos disponibles para check-in">
+          {eventsList.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              isSelected={selectedEventId === event.id}
+              onSelect={handleSelectEvent}
+            />
+          ))}
         </section>
-        <p className="sr-only" aria-live="polite">
-          {monitoredEvent
-            ? `Monitoreo de check-in activado para el evento ${monitoredEvent}`
-            : "Monitoreo de check-in desactivado"}
-        </p>
       </main>
     </div>
   );

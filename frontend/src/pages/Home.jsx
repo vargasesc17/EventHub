@@ -1,57 +1,76 @@
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import logoSvg from "../assets/eventhubcolibri.svg";
 import profileSvg from "../assets/account.svg";
+import EventCard from "../components/EventCard";
 
+const navigation = [
+  { name: "Boletas", path: "/boletas" },
+  { name: "Eventos", path: "/eventos" },
+  { name: "Notificaciones", path: "/notificaciones" },
+  { name: "Check-in", path: "/checkin" },
+];
 
-const navigation = ["Boletas", "Eventos", "Notificaciones", "Check-in"];
-const events = ["evento1", "evento2", "evento3"];
+// Arreglo dinámico con los datos de los eventos
+const eventsList = [
+  { id: 1, titulo: "Conferencia Tech 2026", imagen: "" },
+  { id: 2, titulo: "Taller de React y Tailwind", imagen: "" },
+  { id: 3, titulo: "Meetup de IoT y Hardware", imagen: "" },
+  { id: 4, titulo: "Hackathon EventHub", imagen: "" },
+];
 
 export default function Home() {
-  const [activeSection, setActiveSection] = useState("Eventos");
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const location = useLocation(); // Detecta la ruta actual para saber cuál pestaña está activa
+  const [selectedEventId, setSelectedEventId] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const selectSection = (section) => {
-    setActiveSection(section);
-    setIsMenuOpen(false);
+  const handleSelectEvent = (id) => {
+    setSelectedEventId(selectedEventId === id ? null : id);
   };
 
   return (
-    <div className="min-h-dvh bg-[#373d4d] text-[#0f0140]">
+    <div className="min-h-dvh bg-[#7F8081] text-[#0f0140]">
       <header className="relative z-20 h-[125px] bg-[#0f0140] text-white">
         <div className="mx-auto flex h-full max-w-[1192px] items-center justify-between px-6 lg:px-0">
-          <button
+          
+          {/* Logo que redirige a la raíz (Home) */}
+          <Link
+            to="/"
             className="flex items-center gap-0.5 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
-            onClick={() => selectSection("Eventos")}
-            aria-label="Ir a Eventos"
+            aria-label="Ir al inicio"
           >
             <img src={logoSvg} alt="" className="h-[59px] w-[64px]" />
             <span className="font-inter-bold text-[30px] leading-none sm:text-[36px]">
               EventHub
             </span>
-          </button>
+          </Link>
 
+          {/* Navegación mediante Links de React Router */}
           <nav
             className={`${
               isMenuOpen ? "flex" : "hidden"
             } absolute top-[125px] right-0 left-0 flex-col bg-[#0f0140] px-6 pb-6 md:static md:flex md:flex-row md:items-center md:gap-9 md:bg-transparent md:p-0 lg:gap-[43px]`}
             aria-label="Navegación principal"
           >
-            {navigation.map((item) => (
-              <button
-                key={item}
-                onClick={() => selectSection(item)}
-                className={`font-inter-bold rounded-sm py-3 text-left text-[20px] leading-normal transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:py-0 md:text-[24px] ${
-                  activeSection === item
-                    ? "bg-[#070024] text-white  " // Azul más oscuro y marcado para la sección activa
-                    : "text-white/80 hover:bg-[#070024] hover:text-white" // Azul más oscuro al pasar el mouse
-                }`}
-                aria-current={activeSection === item ? "page" : undefined}
-              >
-                {item}
-              </button>
-            ))}
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`font-inter-bold rounded-sm py-3 px-2 text-left text-[20px] leading-normal transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:py-0 md:text-[24px] ${
+                    isActive
+                      ? "bg-[#070024] text-white"
+                      : "text-white/80 hover:bg-[#070024] hover:text-white"
+                  }`}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="flex items-center gap-3">
@@ -85,7 +104,6 @@ export default function Home() {
               <span className="h-0.5 w-6 bg-white" />
               <span className="h-0.5 w-6 bg-white" />
               <span className="h-0.5 w-6 bg-white" />
-              
             </button>
           </div>
         </div>
@@ -100,38 +118,16 @@ export default function Home() {
           className="mt-[20px] grid grid-cols-1 gap-x-[34px] gap-y-8 sm:grid-cols-2 lg:grid-cols-4"
           aria-label="Eventos disponibles"
         >
-          {events.map((eventName) => {
-            const isSelected = selectedEvent === eventName;
-
-            return (
-              <button
-                key={eventName}
-                type="button"
-                onClick={() => setSelectedEvent(isSelected ? null : eventName)}
-                className="group min-w-0 rounded-[21px] text-left focus-visible:outline-none"
-                aria-pressed={isSelected}
-              >
-                <span
-                  className={`block h-[207px] rounded-[21px] bg-white transition duration-200 group-hover:-translate-y-1 group-hover:shadow-lg group-focus-visible:outline-4 group-focus-visible:outline-offset-4 group-focus-visible:outline-[#5524bf] ${
-                    isSelected
-                      ? "-translate-y-1 shadow-[0_12px_28px_rgba(15,1,64,0.18)] outline-4 outline-offset-4 outline-[#5524bf]"
-                      : ""
-                  }`}
-                  aria-hidden="true"
-                />
-                <span className="font-inter-semibold mt-[13px] block px-[17px] text-[24px] leading-normal">
-                  {eventName}
-                </span>
-              </button>
-            );
-          })}
+          {/* Renderizado dinámico con el componente EventCard */}
+          {eventsList.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              isSelected={selectedEventId === event.id}
+              onSelect={handleSelectEvent}
+            />
+          ))}
         </section>
-
-        <p className="sr-only" aria-live="polite">
-          {selectedEvent
-            ? `${selectedEvent} seleccionado`
-            : "Ningún evento seleccionado"}
-        </p>
       </main>
     </div>
   );
