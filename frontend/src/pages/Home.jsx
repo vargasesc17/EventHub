@@ -1,4 +1,7 @@
 import { useState } from "react";
+import logoSvg from "../assets/eventhubcolibri.svg";
+import profileSvg from "../assets/account.svg";
+
 
 const navigation = ["Boletas", "Eventos", "Notificaciones", "Check-in"];
 const events = ["evento1", "evento2", "evento3"];
@@ -23,7 +26,7 @@ export default function Home() {
             onClick={() => selectSection("Eventos")}
             aria-label="Ir a Eventos"
           >
-            <img src="/assets/eventhubcolibri.svg" alt="" className="h-[59px] w-[64px]" />
+            <img src={logoSvg} alt="" className="h-[59px] w-[64px]" />
             <span className="font-inter-bold text-[30px] leading-none sm:text-[36px]">
               EventHub
             </span>
@@ -59,7 +62,7 @@ export default function Home() {
                 aria-label="Abrir menú de cuenta"
                 aria-expanded={isProfileOpen}
               >
-                <img src="/assets/1bc60.svg" alt="" className="size-[50px]" />
+                <img src={profileSvg} alt="" className="size-[50px]" />
               </button>
               {isProfileOpen && (
                 <div className="font-inter-semibold absolute top-[62px] right-0 w-44 rounded-xl bg-white p-2 text-[16px] text-[#0f0140] shadow-xl">

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* Clases de tipografía que exportó Figma */
+/* Y de aquí para abajo pones tus clases o reglas personalizadas */
 .font-inter-bold {
   font-family: 'Inter', sans-serif;
   font-weight: 700;
