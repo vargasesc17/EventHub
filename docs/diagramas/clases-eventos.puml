@@ -50,6 +50,8 @@ package "Microservicio Eventos" {
       EN_CURSO
       FINALIZADO
       CANCELADO
+      + puedePasarA(destino : EstadoEvento) : boolean
+
     }
     enum TipoBoleta <<enumeración>> {
       GENERAL
@@ -106,9 +108,13 @@ package "Microservicio Eventos" {
     class GestionarEventoUseCase <<caso de uso>> {
       + crear(datos : CrearEventoCommand) : Evento
       + editar(id : UUID, datos : EditarEventoCommand) : Evento
-      + publicar(id : UUID)
-      + cancelar(id : UUID)
+      + publicar(id : UUID) : Evento
+      + iniciar(id : UUID) : Evento
+      + finalizar(id : UUID) : Evento
+      + cancelar(id : UUID) : Evento
+      + reprogramar(id : UUID, datos : ReprogramarEventoCommand) : Evento
     }
+    class ReprogramarEventoCommand <<record>>
     class ConsultarEventosUseCase <<caso de uso>> {
       + buscarPorId(id : UUID) : Evento
       + catalogo() : List<Evento>
@@ -123,9 +129,12 @@ package "Microservicio Eventos" {
       + consultar(id) : 200
       + editar(id, request) : 200
       + catalogo() : 200
+      + publicar(id) : 200
+      + iniciar(id) : 200
+      + finalizar(id) : 200
+      + cancelar(id) : 200
+      + reprogramar(id, request) : 200
     }
-    class ManejadorDeErrores <<entrada>>
-  }
   package "eventos.infrastructure" as ev_inf <<infrastructure>> {
     class JpaEventoRepository <<adaptador>>
     class EventoMapper
@@ -134,6 +143,8 @@ package "Microservicio Eventos" {
     interface EventoJpaRepository <<Spring Data>>
     class CasosDeUsoConfig <<configuración>>
     class RabbitPublicadorEventos <<adaptador>>
+    class EventoActualizadoMensaje <<record>>
+    class MensajeriaConfig <<configuración>>
   }
 }
 
@@ -162,6 +173,9 @@ EventoController --> GestionarEventoUseCase
 EventoController --> ConsultarEventosUseCase
 ManejadorDeErrores ..> ReglaDeNegocioException : 422
 ManejadorDeErrores ..> EventoNoEncontradoException : 404
+Evento ..> EstadoEvento : puedePasarA
+GestionarEventoUseCase ..> ReprogramarEventoCommand
+RabbitPublicadorEventos ..> EventoActualizadoMensaje : arma el JSON del contrato
 
 ' ---------------------------------------------------------- infrastructure
 JpaEventoRepository ..|> EventoRepository
@@ -205,10 +219,13 @@ legend right
      GestionarEventoUseCase (escritura).
   **Invariante**: la suma de cupos no supera el aforo; Evento la valida
      al crear y al editar, así no existe un evento inválido.
+  **Observer (publish/subscribe)**: Eventos publica evento.actualizado
+     en el exchange y no conoce a quienes escuchan (Notificaciones, Boletería).
+  **Máquina de estados**: EstadoEvento.puedePasarA define las únicas
+     transiciones válidas; Evento no tiene setEstado.
   ----
   **Estado de la implementación**
-  Implementado en #19: crear, editar, consultar y catálogo.
-  Diseño pendiente (#20): publicar, iniciar, finalizar, cancelar,
-     cambiarFecha, cambiarLugar, PublicadorEventos y su adaptador.
+  Implementado: #19 (CRUD y catálogo) y #20 (ciclo de vida y evento.actualizado).
+  Pendiente: el cambio INVENTARIO del contrato (aforo o cupos de un evento publicado).
 endlegend
 @enduml

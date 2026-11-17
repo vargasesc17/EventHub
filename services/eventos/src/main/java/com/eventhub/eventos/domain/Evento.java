@@ -63,6 +63,44 @@ public class Evento {
         this.categorias = List.copyOf(categorias);
     }
 
+    public void publicar()  { cambiarEstado(EstadoEvento.PUBLICADO); }
+    public void iniciar()   { cambiarEstado(EstadoEvento.EN_CURSO); }
+    public void finalizar() { cambiarEstado(EstadoEvento.FINALIZADO); }
+    public void cancelar()  { cambiarEstado(EstadoEvento.CANCELADO); }
+
+    /** Cambia la fecha de un evento ya publicado. Hay compradores que avisar (RF-04). */
+    public void cambiarFecha(Instant nueva) {
+        exigirPublicado("cambiar la fecha");
+        if (nueva == null) {
+            throw new ReglaDeNegocioException("La fecha de inicio del evento es obligatoria");
+        }
+        this.fechaInicio = nueva;
+    }
+
+    /** Cambia el lugar de un evento ya publicado. */
+    public void cambiarLugar(String nuevo) {
+        exigirPublicado("cambiar el lugar");
+        if (nuevo == null || nuevo.isBlank()) {
+            throw new ReglaDeNegocioException("El lugar del evento es obligatorio");
+        }
+        this.lugar = nuevo;
+    }
+
+    private void cambiarEstado(EstadoEvento destino) {
+        if (!estado.puedePasarA(destino)) {
+            throw new ReglaDeNegocioException(
+                    "Un evento en estado " + estado + " no puede pasar a " + destino);
+        }
+        this.estado = destino;
+    }
+
+    private void exigirPublicado(String accion) {
+        if (estado != EstadoEvento.PUBLICADO) {
+            throw new ReglaDeNegocioException(
+                    "Solo se puede " + accion + " de un evento PUBLICADO (estado: " + estado + ")");
+        }
+    }
+
     private static void validar(String nombre, String lugar, Instant fechaInicio, int aforoMaximo,
                                 List<CategoriaBoleta> categorias) {
 
