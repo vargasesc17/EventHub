@@ -31,4 +31,9 @@ public class CasosDeUsoConfig {
         return new ComprarBoletaUseCase(aforos, inventarios, boletas, estrategias, fabricas, pasarela,
                 generadorQr, publicador, reloj, umbralAlerta);
     }
+
+    @Bean
+    ConsultarAforoUseCase consultarAforoUseCase(AforoRepository aforos, InventarioRepository inventarios) {
+        return new ConsultarAforoUseCase(aforos, inventarios);
+    }
 }
