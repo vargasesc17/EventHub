@@ -127,7 +127,7 @@ services:
       - "8025:8025"   # página web para ver los correos
       - "1025:1025"   # SMTP: aquí envía Notificaciones
 
-frontend:
+  frontend:
     build: ./frontend
     container_name: eventhub-frontend
     ports:
