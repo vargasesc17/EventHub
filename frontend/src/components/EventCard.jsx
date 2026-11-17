@@ -15,7 +15,7 @@ export default function EventCard({ event, onSelect, isSelected }) {
       >
         {/* Si el evento trae una imagen de la API o base de datos, la muestra; si no, queda el cuadro limpio */}
         {event.imagen ? (
-          <img src={event.imagen} alt={event.titulo} className="w-full h-full object-cover" />
+          <img src={event.imagen} alt={event.nombre} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
             Sin imagen
@@ -23,7 +23,7 @@ export default function EventCard({ event, onSelect, isSelected }) {
         )}
       </div>
       <span className="font-inter-semibold mt-[13px] block px-[17px] text-[24px] leading-normal text-[#0f0140]">
-        {event.titulo}
+        {event.nombre}
       </span>
     </button>
   );
