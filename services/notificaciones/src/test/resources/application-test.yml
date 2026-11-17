@@ -10,8 +10,13 @@ spring:
     listener:
       simple:
         auto-startup: false
+  # Tampoco hay servidor de correo: solo se crea el JavaMailSender, no se conecta.
+  mail:
+    host: localhost
 
 management:
   health:
     rabbit:
+      enabled: false
+    mail:
       enabled: false

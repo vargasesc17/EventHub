@@ -7,24 +7,19 @@ import com.tngtech.archunit.lang.ArchRule;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 @AnalyzeClasses(packages = "com.eventhub.notificaciones")
-
-// TODO(#25): quitar allowEmptyShould cuando domain/application/interfaces tengan clases
 public class ArquitecturaTest {
     @ArchTest
     static final ArchRule domainNoDependeDeNadie = noClasses().that().resideInAPackage("..domain..")
             .should().dependOnClassesThat()
-            .resideInAnyPackage("..application..", "..infrastructure..", "..interfaces..", "org.springframework..")
-            .allowEmptyShould(true);
+            .resideInAnyPackage("..application..", "..infrastructure..", "..interfaces..",
+                    "org.springframework..", "jakarta..", "org.hibernate..");
 
     @ArchTest
     static final ArchRule applicationNoDependeDeInfNiInt = noClasses().that().resideInAPackage("..application..")
             .should().dependOnClassesThat()
-            .resideInAnyPackage("..infrastructure..", "..interfaces..")
-            .allowEmptyShould(true);
+            .resideInAnyPackage("..infrastructure..", "..interfaces..");
 
     @ArchTest
     static final ArchRule interfacesNoDependeDeInf = noClasses().that().resideInAPackage("..interfaces..")
-            .should().dependOnClassesThat().resideInAnyPackage("..infrastructure..")
-            .allowEmptyShould(true);
+            .should().dependOnClassesThat().resideInAnyPackage("..infrastructure..");
 }
-
