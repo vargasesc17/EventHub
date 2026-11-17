@@ -117,8 +117,7 @@ Esquema: [`boleta.comprada.schema.json`](boleta.comprada.schema.json) · Ejemplo
 
 **Consumen:**
 - **Notificaciones** → alerta a todos los compradores del evento usando su copia local (#26) si `cambios` incluye `FECHA`, `LUGAR` o `CANCELADO`. **Ignora** los mensajes que solo traen `PUBLICADO` (todavía no hay compradores) o solo `INVENTARIO` (no afecta a quien ya compró). Si cambia `FECHA`, también reprograma el recordatorio de 24 horas.
-- **Boletería** → actúa con `PUBLICADO` (crea el inventario por categoría y guarda el aforo máximo y el organizador), `INVENTARIO` (ajusta el inventario, ver abajo) y `CANCELADO` (bloquea nuevas ventas). Ignora `FECHA` y `LUGAR`.
-
+- **Boletería** → actúa con `PUBLICADO` (crea el inventario por categoría y guarda su copia del evento: nombre, fecha, lugar, aforo máximo y organizador), `FECHA` y `LUGAR` (actualiza su copia, porque `boleta.comprada` lleva la fecha y el lugar para el correo de confirmación) y `CANCELADO` (bloquea nuevas ventas). `INVENTARIO` está definido abajo pero **todavía no se aplica**: Eventos no lo publica en esta entrega.
 | Campo de `datos` | Tipo | Descripción |
 |---|---|---|
 | `eventoId` | UUID | ID del evento. |
