@@ -5,9 +5,9 @@ import profileSvg from "../assets/account.svg";
 import EventCard from "../components/EventCard";
 
 const eventsList = [
-  { id: 1, titulo: "Conferencia Tech 2026", imagen: "" },
-  { id: 2, titulo: "Taller de React y Tailwind", imagen: "" },
-  { id: 3, titulo: "Meetup de IoT y Hardware", imagen: "" },
+  { id: 1, nombre: "Conferencia Tech 2026", imagen: "" },
+  { id: 2, nombre: "Taller de React y Tailwind", imagen: "" },
+  { id: 3, nombre: "Meetup de IoT y Hardware", imagen: "" },
 ];
 
 const navigation = [

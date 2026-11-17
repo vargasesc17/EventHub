@@ -13,10 +13,10 @@ const navigation = [
 
 // Arreglo dinámico con los datos de los eventos
 const eventsList = [
-  { id: 1, titulo: "Conferencia Tech 2026", imagen: "" },
-  { id: 2, titulo: "Taller de React y Tailwind", imagen: "" },
-  { id: 3, titulo: "Meetup de IoT y Hardware", imagen: "" },
-  { id: 4, titulo: "Hackathon EventHub", imagen: "" },
+  { id: 1, nombre: "Conferencia Tech 2026", imagen: "" },
+  { id: 2, nombre: "Taller de React y Tailwind", imagen: "" },
+  { id: 3, nombre: "Meetup de IoT y Hardware", imagen: "" },
+  { id: 4, nombre: "Hackathon EventHub", imagen: "" },
 ];
 
 export default function Home() {

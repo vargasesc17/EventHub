@@ -5,10 +5,10 @@ import profileSvg from "../assets/account.svg";
 import EventCard from "../components/EventCard";
 
 const events = [
-  { id: 1, titulo: "Lorem ipsum dolor sit", imagen: "" },
-  { id: 2, titulo: "Lorem ipsum dolor sit", imagen: "" },
-  { id: 3, titulo: "Lorem ipsum dolor sit", imagen: "" },
-  { id: 4, titulo: "Lorem ipsum dolor sit", imagen: "" },
+  { id: 1, nombre: "Lorem ipsum dolor sit", imagen: "" },
+  { id: 2, nombre: "Lorem ipsum dolor sit", imagen: "" },
+  { id: 3, nombre: "Lorem ipsum dolor sit", imagen: "" },
+  { id: 4, nombre: "Lorem ipsum dolor sit", imagen: "" },
 ];
 
 const navigation = [
