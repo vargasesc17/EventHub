@@ -3,6 +3,18 @@ spring:
     url: ${BOLETERIA_DB_URL:jdbc:postgresql://localhost:5432/boleteria_db}
     username: ${BOLETERIA_DB_USER}
     password: ${BOLETERIA_DB_PASSWORD}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: 5672
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+    listener:
+      simple:
+        prefetch: 10                     # contrato: máximo 10 mensajes en memoria por consumidor
+        default-requeue-rejected: false  # un mensaje rechazado va a la DLQ, no vuelve a la cola
+  jpa:
+    hibernate:
+      ddl-auto: update
   application:
     name: boleteria
 

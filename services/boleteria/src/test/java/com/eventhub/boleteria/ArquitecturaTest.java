@@ -8,7 +8,6 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 @AnalyzeClasses(packages = "com.eventhub.boleteria")
 
-// TODO(#23): quitar el último allowEmptyShould cuando interfaces tenga clases
 public class ArquitecturaTest {
     @ArchTest
     static final ArchRule domainNoDependeDeNadie = noClasses().that().resideInAPackage("..domain..")
@@ -23,7 +22,6 @@ public class ArquitecturaTest {
 
     @ArchTest
     static final ArchRule interfacesNoDependeDeInf = noClasses().that().resideInAPackage("..interfaces..")
-            .should().dependOnClassesThat().resideInAnyPackage("..infrastructure..")
-            .allowEmptyShould(true);
+            .should().dependOnClassesThat().resideInAnyPackage("..infrastructure..");
 }
 

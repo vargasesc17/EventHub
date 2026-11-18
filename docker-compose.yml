@@ -78,10 +78,15 @@ services:
       BOLETERIA_DB_USER: ${BOLETERIA_DB_USER}
       BOLETERIA_DB_PASSWORD: ${BOLETERIA_DB_PASSWORD}
       BOLETERIA_DB_URL: jdbc:postgresql://postgres:5432/boleteria_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
       - "8082:8080"
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
