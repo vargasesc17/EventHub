@@ -50,4 +50,10 @@ class CategoriaBoletaTest {
 
         assertEquals(a, b);
     }
+
+    @Test
+    void cortesiaConPrecioSeRechaza() {
+        assertThrows(ReglaDeNegocioException.class,
+                () -> new CategoriaBoleta(TipoBoleta.CORTESIA, 20, 10_000));
+    }
 }

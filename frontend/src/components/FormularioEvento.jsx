@@ -62,16 +62,14 @@ export default function FormularioEvento({
 
   // MODIFICAR CATEGORÍA
   const cambiar = (indice, campo, valor) =>
-    setCategorias((actual) =>
-      actual.map((c, i) =>
-        i === indice
-          ? {
-              ...c,
-              [campo]: campo === "tipo" ? valor : Number(valor),
-            }
-          : c
-      )
-    );
+      setCategorias((actual) =>
+          actual.map((c, i) => {
+            if (i !== indice) return c;
+            const nueva = { ...c, [campo]: campo === "tipo" ? valor : Number(valor) };
+            // Una cortesía no tiene precio: al elegirla, el precio queda en 0 (lo exige Eventos).
+            return nueva.tipo === "CORTESIA" ? { ...nueva, precioBase: 0 } : nueva;
+          })
+      );
 
   // GUARDAR EVENTO
   function enviar(e) {
@@ -253,15 +251,17 @@ export default function FormularioEvento({
                   Precio (COP)
 
                   <input
-                    className={inputStyle}
-                    type="number"
-                    required
-                    min="0"
-                    step="1"
-                    value={c.precioBase}
-                    onChange={(e) =>
-                      cambiar(i, "precioBase", e.target.value)
-                    }
+                      className={inputStyle}
+                      type="number"
+                      required
+                      min="0"
+                      step="1"
+                      value={c.precioBase}
+                      disabled={c.tipo === "CORTESIA"}
+                      title={c.tipo === "CORTESIA" ? "Las cortesías no tienen precio" : undefined}
+                      onChange={(e) =>
+                          cambiar(i, "precioBase", e.target.value)
+                      }
                   />
                 </label>
 

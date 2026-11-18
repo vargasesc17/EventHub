@@ -11,6 +11,9 @@ public record CategoriaBoleta(TipoBoleta tipo, int cupos, long precioBase) {
         if (precioBase < 0) {
             throw new ReglaDeNegocioException("Los precios deben ser valor positivo; (recibido: " + precioBase + ")");
         }
+        if (tipo == TipoBoleta.CORTESIA && precioBase != 0) {
+            throw new ReglaDeNegocioException("Una boleta de cortesía no tiene precio (recibido: " + precioBase + ")");
+        }
     }
 
 }
