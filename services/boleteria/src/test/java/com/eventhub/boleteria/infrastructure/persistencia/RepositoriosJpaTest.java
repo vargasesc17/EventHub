@@ -133,4 +133,25 @@ class RepositoriosJpaTest {
 
         assertTrue(mensajes.yaProcesado(messageId));
     }
+
+    @Test
+    void cancelarPorEventoSoloTocaLasActivasDeEseEvento() {
+        var activa = new BoletaGeneral(UUID.randomUUID(), eventoId, UUID.randomUUID(), 50_000, EstadoBoleta.ACTIVA, fecha);
+        var usada = new BoletaGeneral(UUID.randomUUID(), eventoId, UUID.randomUUID(), 50_000, EstadoBoleta.ACTIVA, fecha);
+        var deOtroEvento = new BoletaGeneral(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 50_000, EstadoBoleta.ACTIVA, fecha);
+        boletas.guardar(activa);
+        boletas.guardar(usada);
+        boletas.guardar(deOtroEvento);
+        sincronizar();
+        boletas.marcarUsadaSiActiva(usada.getId());
+
+        int canceladas = boletas.cancelarPorEvento(eventoId);
+
+        assertEquals(1, canceladas);
+        assertEquals(EstadoBoleta.CANCELADA, boletas.buscar(activa.getId()).orElseThrow().getEstado());
+        assertEquals(EstadoBoleta.USADA, boletas.buscar(usada.getId()).orElseThrow().getEstado(),
+                "quien ya entró queda registrado como que entró");
+        assertEquals(EstadoBoleta.ACTIVA, boletas.buscar(deOtroEvento.getId()).orElseThrow().getEstado(),
+                "no toca boletas de otros eventos");
+    }
 }

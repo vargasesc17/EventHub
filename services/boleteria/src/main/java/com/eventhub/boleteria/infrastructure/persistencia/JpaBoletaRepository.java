@@ -10,6 +10,7 @@ import com.eventhub.boleteria.domain.EstadoBoleta;
 import org.springframework.stereotype.Repository;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,6 +47,12 @@ public class JpaBoletaRepository implements BoletaRepository {
     @Override
     public boolean marcarUsadaSiActiva(UUID boletaId) {
         return jpa.cambiarEstadoSi(boletaId, EstadoBoleta.ACTIVA, EstadoBoleta.USADA) == 1;
+    }
+
+    @Override
+    public int cancelarPorEvento(UUID eventoId) {
+        return jpa.cambiarEstadoPorEvento(eventoId,
+                List.of(EstadoBoleta.ACTIVA, EstadoBoleta.RESERVADA), EstadoBoleta.CANCELADA);
     }
 
     /** Reconstruye la subclase correcta según la categoría guardada (una tabla para los 4 tipos). */

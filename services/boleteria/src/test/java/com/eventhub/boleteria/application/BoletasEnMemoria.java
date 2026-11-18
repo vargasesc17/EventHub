@@ -13,6 +13,19 @@ class BoletasEnMemoria implements BoletaRepository {
     private final List<Boleta> guardadas = new ArrayList<>();
     private final Set<UUID> usadas = new HashSet<>();
     private int consultas;
+    private final Set<UUID> canceladas = new HashSet<>();
+
+    @Override
+    public int cancelarPorEvento(UUID eventoId) {
+        int cambiadas = 0;
+        for (var boleta : guardadas) {
+            if (boleta.getEventoId().equals(eventoId) && !usadas.contains(boleta.getId())
+                    && canceladas.add(boleta.getId())) {
+                cambiadas++;
+            }
+        }
+        return cambiadas;
+    }
 
     @Override
     public void guardar(Boleta boleta) { guardadas.add(boleta); }
@@ -28,11 +41,14 @@ class BoletasEnMemoria implements BoletaRepository {
     public boolean marcarUsadaSiActiva(UUID boletaId) {
         var boleta = buscar(boletaId);
         consultas--;   // no cuenta como consulta del caso de uso
-        return boleta.isPresent() && boleta.get().puedeIngresar() && usadas.add(boletaId);
+        return boleta.isPresent() && boleta.get().puedeIngresar()
+                && !canceladas.contains(boletaId) && usadas.add(boletaId);
     }
 
     List<Boleta> guardadas() { return guardadas; }
 
     /** Cuántas veces el caso de uso fue a buscar una boleta "a la base". */
     int consultas() { return consultas; }
+
+    Set<UUID> canceladas() { return canceladas; }
 }

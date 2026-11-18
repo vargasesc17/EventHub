@@ -8,7 +8,7 @@ import java.time.Clock;
 /**
  * Qué hace Boletería cuando llega un evento.actualizado:
  * PUBLICADO crea la copia del evento y su inventario; FECHA y LUGAR actualizan la copia;
- * CANCELADO bloquea las ventas. INVENTARIO todavía no se aplica (Eventos no lo publica).
+ * CANCELADO bloquea las ventas y cancela las boletas vendidas. INVENTARIO todavía no se aplica (Eventos no lo publica).
  */
 public class SincronizarEventoUseCase {
 
@@ -18,15 +18,16 @@ public class SincronizarEventoUseCase {
     private final AforoRepository aforos;
     private final InventarioRepository inventarios;
     private final Clock reloj;
+    private final BoletaRepository boletas;
 
     public SincronizarEventoUseCase(MensajeProcesadoRepository mensajes, AforoRepository aforos,
-                                    InventarioRepository inventarios, Clock reloj) {
+                                    InventarioRepository inventarios, BoletaRepository boletas, Clock reloj) {
         this.mensajes = mensajes;
         this.aforos = aforos;
         this.inventarios = inventarios;
+        this.boletas = boletas;
         this.reloj = reloj;
     }
-
     public Resultado ejecutar(EventoActualizadoComando comando) {
         if (mensajes.yaProcesado(comando.messageId())) {
             return Resultado.DUPLICADO;
@@ -46,6 +47,8 @@ public class SincronizarEventoUseCase {
                 return Resultado.IGNORADO;   // nunca se vendió aquí: no hay nada que bloquear
             }
             aforos.bloquearVentas(eventoId);
+            aforos.bloquearVentas(eventoId);
+            boletas.cancelarPorEvento(eventoId);   // y el check-in las rechaza ("La boleta está cancelada")
             return Resultado.PROCESADO;
         }
         if (!conocido) {
