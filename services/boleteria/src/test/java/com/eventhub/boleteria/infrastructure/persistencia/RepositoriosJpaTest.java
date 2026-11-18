@@ -1,11 +1,10 @@
 package com.eventhub.boleteria.infrastructure.persistencia;
 
 import com.eventhub.boleteria.application.AforoRepository;
+import com.eventhub.boleteria.application.BoletaRepository;
 import com.eventhub.boleteria.application.InventarioRepository;
 import com.eventhub.boleteria.application.MensajeProcesadoRepository;
-import com.eventhub.boleteria.domain.AforoEvento;
-import com.eventhub.boleteria.domain.InventarioCategoria;
-import com.eventhub.boleteria.domain.TipoBoleta;
+import com.eventhub.boleteria.domain.*;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +27,8 @@ class RepositoriosJpaTest {
     @Autowired private InventarioRepository inventarios;
     @Autowired private MensajeProcesadoRepository mensajes;
     @Autowired private EntityManager entityManager;
+    @Autowired private BoletaRepository boletas;
+    @Autowired private BoletaJpaRepository boletasJpa;
 
     private final UUID eventoId = UUID.randomUUID();
     private final UUID organizadorId = UUID.randomUUID();
@@ -50,6 +51,23 @@ class RepositoriosJpaTest {
         sincronizar();
 
         assertEquals(conVentas(), aforos.buscar(eventoId).orElseThrow());
+    }
+
+    @Test
+    void guardaUnaBoletaConLosCamposDeSuTipo() {
+        var boleta = new BoletaVIP(UUID.randomUUID(), eventoId, UUID.randomUUID(), 150_000, EstadoBoleta.ACTIVA,
+                fecha, List.of("Zona VIP", "Ingreso preferencial"));
+
+        boletas.guardar(boleta);
+        sincronizar();
+
+        var fila = boletasJpa.findById(boleta.getId()).orElseThrow();
+        assertEquals(TipoBoleta.VIP, fila.getCategoria());
+        assertEquals(150_000, fila.getPrecioPagado());
+        assertEquals(EstadoBoleta.ACTIVA, fila.getEstado());
+        assertEquals("Zona VIP|Ingreso preferencial", fila.getBeneficios());
+        assertNull(fila.getCarnetEstudiantil());
+        assertNull(fila.getEmitidaPor());
     }
 
     @Test

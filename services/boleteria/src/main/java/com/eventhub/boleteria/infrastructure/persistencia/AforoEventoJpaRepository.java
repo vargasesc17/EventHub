@@ -20,4 +20,19 @@ public interface AforoEventoJpaRepository extends JpaRepository<AforoEventoEntit
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update AforoEventoEntity a set a.ventasBloqueadas = true where a.eventoId = :id")
     int bloquearVentas(@Param("id") UUID id);
+
+    @Transactional
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update AforoEventoEntity a set a.vendidas = a.vendidas + 1 where a.eventoId = :id")
+    int sumarVenta(@Param("id") UUID id);
+
+    /** ADR-0003: solo una compra logra pasar alertaEnviada de false a true. */
+    @Transactional
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            update AforoEventoEntity a set a.alertaEnviada = true
+            where a.eventoId = :id and a.alertaEnviada = false
+              and a.vendidas * 100 >= a.aforoMaximo * :umbral
+            """)
+    int marcarAlerta(@Param("id") UUID id, @Param("umbral") int umbral);
 }

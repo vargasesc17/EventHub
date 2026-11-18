@@ -1,9 +1,7 @@
 package com.eventhub.boleteria.infrastructure;
 
-import com.eventhub.boleteria.application.AforoRepository;
-import com.eventhub.boleteria.application.InventarioRepository;
-import com.eventhub.boleteria.application.MensajeProcesadoRepository;
-import com.eventhub.boleteria.application.SincronizarEventoUseCase;
+import com.eventhub.boleteria.application.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,5 +19,21 @@ public class CasosDeUsoConfig {
     SincronizarEventoUseCase sincronizarEventoUseCase(MensajeProcesadoRepository mensajes, AforoRepository aforos,
                                                       InventarioRepository inventarios, Clock reloj) {
         return new SincronizarEventoUseCase(mensajes, aforos, inventarios, reloj);
+    }
+
+    @Bean
+    ComprarBoletaUseCase comprarBoletaUseCase(AforoRepository aforos, InventarioRepository inventarios,
+                                              BoletaRepository boletas, RegistroEstrategias estrategias,
+                                              RegistroFabricas fabricas, PasarelaPagos pasarela,
+                                              GeneradorQr generadorQr, PublicadorBoleteria publicador,
+                                              Clock reloj,
+                                              @Value("${boleteria.alerta.umbral:90}") int umbralAlerta) {
+        return new ComprarBoletaUseCase(aforos, inventarios, boletas, estrategias, fabricas, pasarela,
+                generadorQr, publicador, reloj, umbralAlerta);
+    }
+
+    @Bean
+    ConsultarAforoUseCase consultarAforoUseCase(AforoRepository aforos, InventarioRepository inventarios) {
+        return new ConsultarAforoUseCase(aforos, inventarios);
     }
 }
