@@ -10,3 +10,14 @@
   font-family: 'Inter', sans-serif;
   font-weight: 600;
 }
+:root { font-family: Inter, sans-serif; color: #0f0140; background: #e5e5e7; }
+body { margin: 0; } button, input, select { font: inherit; } button, .eh-button { cursor: pointer; background: #5524bf; color: white; border: 0; border-radius: 12px; padding: .75rem 1rem; display: inline-block; text-decoration: none; } button:disabled { opacity: .5; cursor: not-allowed; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #32838d; outline-offset: 3px; }
+.eh-navbar { background: #0f0140; color: white; display: flex; align-items: center; flex-wrap: wrap; gap: 24px; padding: 24px max(24px, calc((100% - 1200px) / 2)); }
+.eh-brand { display: flex; align-items: center; font-size: 30px; font-weight: 700; color: white; text-decoration: none; }
+.eh-navbar nav, .eh-account, .eh-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; }
+.eh-navbar nav a { color: white; text-decoration: none; padding: 10px; border-radius: 10px; }.eh-navbar nav a.active { background: #5524bf; }.eh-account { font-size: 14px; }
+.eh-main { max-width: 1200px; padding: 40px 24px; margin: auto; min-height: 80vh; }h1 { font-size: clamp(28px, 4vw, 40px); font-weight: 700; margin-bottom: 24px; }h2 { font-size: 23px; font-weight: 600; margin: 16px 0; }p { margin: 12px 0; }
+.eh-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr)); gap: 28px; margin: 24px 0; }.eh-panel { background: white; border-radius: 24px; padding: 28px; margin: 20px 0; overflow-wrap: anywhere; }.eh-panel a:not(.eh-button) { text-decoration: underline; }.eh-grid .eh-panel { margin: 0; }
+.eh-hero { width: 100%; max-height: 260px; object-fit: cover; border-radius: 24px; margin-bottom: 24px; }.eh-error { background: #ffe5e5; padding: 16px; border-radius: 12px; }
+.eh-form label, .eh-login label { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }input, select { display: block; width: 100%; border: 1px solid #aaa; background: white; color: #0f0140; padding: 12px; border-radius: 10px; box-sizing: border-box; }.eh-category { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 20px; }.eh-category label { flex: 1; min-width: 150px; }.eh-form button { margin: 6px; }fieldset { min-width: 0; }.eh-login { min-height: 100dvh; background: #0f0140; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }.eh-login form { width: min(100%, 440px); background: #32838d; padding: 28px; border-radius: 30px; }.eh-login button { margin-top: 20px; }
