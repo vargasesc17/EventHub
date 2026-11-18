@@ -3,11 +3,14 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import EventCard from "../../components/EventCard";
 
-import { EVENTOS_PRUEBA } from "../../data/eventosPrueba";
+import useConsulta from "../../api/useConsulta";
+import { obtenerCatalogo } from "../../api/eventos";
+import EstadoCarga from "../../components/EstadoCarga";
 
 export default function Home() {
 
   const navigate = useNavigate();
+  const { datos: eventos, cargando, error } = useConsulta(obtenerCatalogo);
 
   const handleSelectEvent = (id) => {
     navigate(`/eventos/${id}`);
@@ -63,15 +66,12 @@ export default function Home() {
           aria-label="Eventos disponibles"
         >
 
-          {EVENTOS_PRUEBA.map((event) => (
+          <EstadoCarga cargando={cargando} error={error} />
 
-            <EventCard
-              key={event.id}
-              event={event}
-              isSelected={false}
-              onSelect={handleSelectEvent}
-            />
+          {eventos?.length === 0 && <p>No hay eventos publicados por ahora.</p>}
 
+          {eventos?.map((event) => (
+              <EventCard key={event.id} event={event} isSelected={false} onSelect={handleSelectEvent} />
           ))}
 
         </section>
