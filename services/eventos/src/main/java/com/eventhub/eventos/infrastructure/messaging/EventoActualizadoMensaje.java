@@ -7,7 +7,6 @@ import com.eventhub.eventos.domain.TipoCambio;
 import com.eventhub.eventos.domain.ValoresAnteriores;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,7 @@ public record EventoActualizadoMensaje(UUID messageId, String tipo, int version,
                 valoresAnteriores(anteriores), evento.getAforoMaximo(),
                 new Organizador(evento.getOrganizadorId(), evento.getOrganizadorCorreo()), categorias);
         return new EventoActualizadoMensaje(UUID.randomUUID(), TIPO, 1,
-                Instant.now().truncatedTo(ChronoUnit.SECONDS), "eventos", datos);
+                Instant.now(), "eventos", datos);
     }
 
     /** El contrato pide solo los campos que cambiaron, o null si no cambió ni fecha ni lugar. */
