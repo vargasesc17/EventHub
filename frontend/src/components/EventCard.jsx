@@ -1,30 +1,89 @@
-export default function EventCard({ event, onSelect, isSelected }) {
+export default function EventCard({
+  event,
+  onSelect,
+  isSelected
+}) {
+
   return (
+
     <button
       type="button"
       onClick={() => onSelect(event.id)}
-      className="group min-w-0 rounded-[21px] text-left focus-visible:outline-none"
       aria-pressed={isSelected}
+      className="
+        group
+        flex!
+        flex-col!
+        items-start!
+        justify-start!
+        w-full
+        min-w-0
+        bg-transparent!
+        p-0!
+        border-0!
+        shadow-none!
+        text-left
+        focus-visible:outline-2
+        focus-visible:outline-[#0f0140]
+      "
     >
+
+      {/* TARJETA DEL EVENTO */}
+
       <div
-        className={`block h-[207px] rounded-[21px] bg-white overflow-hidden transition duration-200 group-hover:-translate-y-1 group-hover:shadow-lg group-focus-visible:outline-4 group-focus-visible:outline-offset-4 group-focus-visible:outline-[#5524bf] ${
-          isSelected
-            ? "-translate-y-1 shadow-[0_12px_28px_rgba(15,1,64,0.18)] outline-4 outline-offset-4 outline-[#5524bf]"
-            : ""
-        }`}
+        className={`
+          block
+          w-full
+          h-[185px]
+          rounded-[25px]
+          bg-white
+          overflow-hidden
+          transition-all
+          duration-200
+          group-hover:-translate-y-1
+          group-hover:shadow-lg
+
+          ${isSelected
+            ? "-translate-y-1 shadow-md"
+            : ""}
+        `}
       >
-        {/* Si el evento trae una imagen de la API o base de datos, la muestra; si no, queda el cuadro limpio */}
-        {event.imagen ? (
-          <img src={event.imagen} alt={event.nombre} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
-            Sin imagen
-          </div>
-        )}
+
+        <div className="
+          w-full
+          h-full
+          flex
+          items-center
+          justify-center
+          text-gray-400
+          text-sm
+        ">
+
+          Sin imagen
+
+        </div>
+
       </div>
-      <span className="font-inter-semibold mt-[13px] block px-[17px] text-[24px] leading-normal text-[#0f0140]">
+
+      {/* NOMBRE DEL EVENTO */}
+
+      <span className="
+        font-inter-semibold
+        font-semibold!
+        mt-[13px]
+        block
+        px-[10px]
+        text-[22px]
+        leading-snug
+        text-[#0f0140]
+      ">
+
         {event.nombre}
+
       </span>
+
     </button>
+
   );
+
 }

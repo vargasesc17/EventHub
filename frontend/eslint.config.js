@@ -18,4 +18,5 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  { files: ['src/sesion/Sesion.jsx'], rules: { 'react-refresh/only-export-components': 'off' } },
 ])
