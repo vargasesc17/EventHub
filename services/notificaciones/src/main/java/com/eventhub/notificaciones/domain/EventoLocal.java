@@ -20,6 +20,14 @@ public record EventoLocal(InfoEvento info, boolean cancelado, Instant ultimaFech
         }
     }
 
+    /**
+     * ¿Ya se aplicó un evento.actualizado igual o más reciente que uno emitido en fechaEmision?
+     * Si es así, el mensaje llegó fuera de orden y se ignora (docs/contratos, "Orden").
+     */
+    public boolean yaAplicoUnoPosteriorA(Instant fechaEmision) {
+        return ultimaFechaEmision != null && !fechaEmision.isAfter(ultimaFechaEmision);
+    }
+
     /** Un evento que se conoce por primera vez a través de una compra. */
     public static EventoLocal desdeCompra(InfoEvento info) {
         return new EventoLocal(info, false, null);

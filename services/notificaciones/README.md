@@ -36,6 +36,19 @@ Mensaje de prueba enviado a RabbitMQ: Hola desde Notificaciones, ...
 Mensaje de prueba recibido de RabbitMQ: Hola desde Notificaciones, ... -> conexión OK
 ```
 
+## Qué correos envía (RF-04, RF-05)
+
+| Cuándo | A quién | Clase |
+|---|---|---|
+| Llega `boleta.comprada` | Al comprador: confirmación con el QR (#25) | `ConsumidorBoletaComprada` → `ProcesarBoletaCompradaUseCase` |
+| Llega `evento.actualizado` con `FECHA`, `LUGAR` o `CANCELADO` | A cada comprador, **una sola vez** aunque tenga varias boletas (#26) | `ConsumidorEventoActualizado` → `ProcesarEventoActualizadoUseCase` |
+| Llega `evento.aforo.critico` | Al organizador, una vez por evento (#26) | `ConsumidorAforoCritico` → `ProcesarAforoCriticoUseCase` |
+| Faltan menos de 24 horas para el evento | A cada comprador; si cambia la fecha, se envía otro para la fecha nueva (#26) | `RecordatoriosJob` (cada minuto) → `EnviarRecordatoriosUseCase` |
+
+`evento.actualizado` con solo `PUBLICADO` o solo `INVENTARIO` no envía correos. Los mensajes repetidos (mismo `messageId`) y los que llegan fuera de orden se ignoran.
+
+En local los correos **no salen a internet**: los atrapa **Mailpit**. Se ven en http://localhost:8025.
+
 ## Cómo correrlo
 
 ### Con Docker (recomendado)
