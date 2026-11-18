@@ -7,6 +7,7 @@ import EstadoCarga from "../../components/EstadoCarga";
 import { obtenerEvento } from "../../api/eventos";
 import { obtenerAforo, comprarBoleta } from "../../api/boleteria";
 import useConsulta from "../../api/useConsulta";
+import { guardarMiBoleta } from "../../storage/misBoletas";
 
 import { useSesion } from "../../sesion/Sesion";
 import { EVENTOS_PRUEBA } from "../../data/eventosPrueba";
@@ -137,6 +138,13 @@ export default function ComprarBoleta() {
       const resultado = await comprarBoleta(datosCompra);
 
       setBoleta(resultado);
+      // "Mis boletas" se guarda en el navegador: no hay un endpoint para listarlas.
+      guardarMiBoleta(usuario.id, {
+        ...resultado,
+        id: resultado.boletaId,
+        nombreEvento: evento.nombre,
+        nombreComprador: usuario.nombre,
+      });
 
     } catch (err) {
 
