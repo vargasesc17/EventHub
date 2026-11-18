@@ -1,7 +1,14 @@
+
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import Pagina from "../../components/Pagina";
+import EstadoCarga from "../../components/EstadoCarga";
+
+import { registrarCheckIn } from "../../api/boleteria";
+import { obtenerEvento } from "../../api/eventos";
+import { useSesion } from "../../sesion/Sesion";
+import useConsulta from "../../api/useConsulta";
 
 // ESTILO GENERAL DE LOS BOTONES
 
@@ -12,7 +19,8 @@ const buttonStyle =
   "text-white! no-underline! cursor-pointer " +
   "transition-all duration-200 " +
   "hover:-translate-y-0.5 hover:shadow-md " +
-  "active:scale-95";
+  "active:scale-95 disabled:opacity-50 " +
+  "disabled:cursor-not-allowed";
 
 // COLORES DE LOS ESTADOS
 
@@ -41,45 +49,127 @@ const estados = {
 export default function CheckinDetalle() {
 
   const { eventoId } = useParams();
+  const { usuario } = useSesion();
+
+  // CONSULTAR EL EVENTO REAL
+
+  const {
+    datos: evento,
+    cargando,
+    error,
+  } = useConsulta(obtenerEvento, eventoId);
+
+  // ESTADOS DEL CHECK-IN
 
   const [estado, setEstado] = useState("pendiente");
   const [horaIngreso, setHoraIngreso] = useState("");
   const [codigoQr, setCodigoQr] = useState("");
 
-  // SIMULACIÓN VISUAL DEL CHECK-IN
-  // Pendiente de conectar con el backend.
+  const [motivo, setMotivo] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [ocupado, setOcupado] = useState(false);
 
-  function validarBoleta(e) {
+  const bloqueado =
+    ocupado || cargando || !!error || !evento || !usuario;
+
+  // VALIDAR BOLETA CON EL BACKEND
+
+  async function validarBoleta(e) {
 
     e.preventDefault();
 
+    if (bloqueado) return;
+
+    // LIMPIAR RESULTADOS ANTERIORES
+
+    setCategoria("");
+    setHoraIngreso("");
+    setMotivo("");
+    setEstado("pendiente");
+
+    // COMPROBAR EL CÓDIGO QR
+
     if (!codigoQr.trim()) {
+
+      setMotivo("Escanea o pega el código QR.");
       setEstado("incorrecto");
+
       return;
     }
 
-    if (estado === "correcto" || estado === "usada") {
-      setEstado("usada");
-      return;
+    setOcupado(true);
+
+    try {
+
+      // ENVIAR EL QR Y EL ID DEL STAFF
+
+      const r = await registrarCheckIn({
+        codigoQr: codigoQr.trim(),
+        staffId: usuario.id,
+      });
+
+      // ACCESO CORRECTO
+
+      setCategoria(r.categoria || "");
+
+      setHoraIngreso(
+        new Date().toLocaleTimeString("es-CO", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+
+      setMotivo("");
+      setEstado("correcto");
+
+    } catch (err) {
+
+      // BOLETA RECHAZADA
+
+      if (err.status === 409) {
+
+        const mensaje =
+          err.motivo ||
+          err.detail ||
+          "Boleta rechazada.";
+
+        setMotivo(mensaje);
+
+        setEstado(
+          mensaje.toLowerCase().includes("ya fue usada")
+            ? "usada"
+            : "incorrecto"
+        );
+
+      } else {
+
+        setMotivo(
+          err.detail ||
+          "No se pudo validar. Revisa la conexión."
+        );
+
+        setEstado("incorrecto");
+      }
+
+    } finally {
+
+      setOcupado(false);
+
     }
 
-    setHoraIngreso(
-      new Date().toLocaleTimeString("es-CO", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    );
-
-    setEstado("correcto");
   }
 
-  // REINICIAR LA DEMOSTRACIÓN
+  // REINICIAR LA VALIDACIÓN
 
   function reiniciar() {
+
+    if (ocupado) return;
 
     setCodigoQr("");
     setHoraIngreso("");
     setEstado("pendiente");
+    setMotivo("");
+    setCategoria("");
 
   }
 
@@ -87,16 +177,24 @@ export default function CheckinDetalle() {
 
     <Pagina titulo="Check-in">
 
+      <EstadoCarga
+        cargando={cargando}
+        error={error}
+      />
+
       {/* CONTENIDO PRINCIPAL */}
 
       <div className="mx-auto max-w-[1050px]">
 
         {/* IDENTIFICACIÓN DEL EVENTO */}
 
-        <p className="mb-8 break-all font-inter-semibold
-          text-[15px] text-[#69529b]">
+        <p className="
+          mb-8 break-words
+          font-inter-semibold font-semibold!
+          text-[20px] text-[#69529b]
+        ">
 
-          Evento: {eventoId}
+          Evento: {evento?.nombre || eventoId}
 
         </p>
 
@@ -129,7 +227,7 @@ export default function CheckinDetalle() {
 
               </h2>
 
-              {/* ESPACIO PARA EL ESCÁNER */}
+              {/* ESPACIO REPRESENTATIVO DEL ESCÁNER */}
 
               <div className="
                 relative flex aspect-square
@@ -203,7 +301,8 @@ export default function CheckinDetalle() {
                 text-[15px] text-[#69529b]
               ">
 
-                Espacio reservado para el escáner QR.
+                Ingresa el código QR de la boleta
+                para validar el acceso al evento.
 
               </p>
 
@@ -229,12 +328,19 @@ export default function CheckinDetalle() {
                 id="codigoQr"
                 type="text"
                 value={codigoQr}
+                disabled={bloqueado}
+                autoComplete="off"
+                spellCheck={false}
                 onChange={(e) => {
+
                   setCodigoQr(e.target.value);
                   setEstado("pendiente");
                   setHoraIngreso("");
+                  setMotivo("");
+                  setCategoria("");
+
                 }}
-                placeholder="Ingresa el código de prueba"
+                placeholder="Pega el código QR de la boleta"
                 className="
                   w-full rounded-full!
                   border-2! border-solid!
@@ -246,16 +352,23 @@ export default function CheckinDetalle() {
                   hover:border-[#69529b]!
                   focus:border-[#5524bf]!
                   focus:ring-2 focus:ring-[#5524bf]/20
+                  disabled:opacity-50
+                  disabled:cursor-not-allowed
                 "
               />
 
               <button
                 type="submit"
+                disabled={bloqueado}
                 className={`${buttonStyle}
-                  bg-[#5524bf]! hover:bg-[#260477]!`}
+                  bg-[#5524bf]!
+                  hover:bg-[#260477]!
+                `}
               >
 
-                Simular validación
+                {ocupado
+                  ? "Validando boleta..."
+                  : "Validar boleta"}
 
               </button>
 
@@ -285,7 +398,7 @@ export default function CheckinDetalle() {
 
             <hr className="border-white/30" />
 
-            {/* NOMBRE */}
+            {/* NOMBRE DEL EVENTO */}
 
             <div className="rounded-[25px] bg-white/15 p-4">
 
@@ -294,7 +407,7 @@ export default function CheckinDetalle() {
                 text-[15px] text-white/80
               ">
 
-                Nombre del asistente
+                Evento seleccionado
 
               </p>
 
@@ -303,7 +416,7 @@ export default function CheckinDetalle() {
                 text-[22px] text-white
               ">
 
-                Pendiente de consulta
+                {evento?.nombre || "—"}
 
               </p>
 
@@ -331,9 +444,10 @@ export default function CheckinDetalle() {
 
                 <dd className="
                   mt-1 font-inter-bold text-[18px]
+                  break-words
                 ">
 
-                  —
+                  {evento?.lugar || "—"}
 
                 </dd>
 
@@ -356,7 +470,10 @@ export default function CheckinDetalle() {
                   mt-1 font-inter-bold text-[18px]
                 ">
 
-                  —
+                  {evento?.fechaInicio
+                    ? new Date(evento.fechaInicio)
+                        .toLocaleString("es-CO")
+                    : "—"}
 
                 </dd>
 
@@ -379,7 +496,9 @@ export default function CheckinDetalle() {
                   mt-1 font-inter-bold text-[18px]
                 ">
 
-                  —
+                  {estado === "correcto"
+                    ? categoria || "—"
+                    : "—"}
 
                 </dd>
 
@@ -394,7 +513,7 @@ export default function CheckinDetalle() {
                   text-[14px] text-white/80
                 ">
 
-                  Hora de ingreso simulada
+                  Hora de ingreso
 
                 </dt>
 
@@ -438,9 +557,37 @@ export default function CheckinDetalle() {
                 `}
               >
 
-                {estados[estado].texto}
+                {ocupado
+                  ? "Validando..."
+                  : estados[estado].texto}
 
               </div>
+
+              {/* MOTIVO DEL RECHAZO */}
+
+              {(estado === "incorrecto" ||
+                estado === "usada") &&
+                motivo && (
+
+                <div
+                  role="alert"
+                  className="
+                    rounded-[25px]
+                    border-2 border-red-200
+                    bg-red-50 p-4
+                    text-center
+                    font-inter-semibold
+                    font-semibold!
+                    text-[16px]
+                    text-red-700
+                  "
+                >
+
+                  {motivo}
+
+                </div>
+
+              )}
 
             </div>
 
@@ -449,10 +596,12 @@ export default function CheckinDetalle() {
             <button
               type="button"
               onClick={reiniciar}
+              disabled={ocupado}
               className={`${buttonStyle}
                 mt-2 w-full
                 bg-[#260477]!
-                hover:bg-[#070024]!`}
+                hover:bg-[#070024]!
+              `}
             >
 
               Nueva validación
@@ -463,37 +612,6 @@ export default function CheckinDetalle() {
 
         </section>
 
-        {/* AVISO DE DESARROLLO */}
-
-        <div className="
-          mt-8 rounded-[25px]
-          border-2 border-[#d5c9e7]
-          bg-[#f5f2fa] p-5
-        ">
-
-          <p className="
-            font-inter-bold text-[17px]
-            text-[#260477]
-          ">
-
-            Modo de demostración
-
-          </p>
-
-          <p className="
-            mt-2 font-inter-semibold
-            text-[15px] text-[#69529b]
-          ">
-
-            Esta interfaz permite probar visualmente los estados
-            del check-in. La lectura del QR y la validación real
-            de las boletas requieren la integración del backend.
-            Ninguna simulación autoriza un ingreso real.
-
-          </p>
-
-        </div>
-
         {/* BOTÓN VOLVER */}
 
         <div className="mt-8">
@@ -501,7 +619,9 @@ export default function CheckinDetalle() {
           <Link
             to="/checkin"
             className={`${buttonStyle}
-              bg-[#260477]! hover:bg-[#070024]!`}
+              bg-[#260477]!
+              hover:bg-[#070024]!
+            `}
           >
 
             ← Volver a selección

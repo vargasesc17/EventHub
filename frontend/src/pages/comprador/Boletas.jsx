@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import Pagina from "../../components/Pagina";
 import { useSesion } from "../../sesion/Sesion";
 import { obtenerMisBoletas } from "../../storage/misBoletas";
-import { EVENTOS_PRUEBA } from "../../data/eventosPrueba";
 
 // ESTILO GENERAL DE LOS BOTONES
 
@@ -172,14 +171,8 @@ export default function Boletas() {
 
           const id = boleta.boletaId || boleta.id;
 
-          const eventoPrueba = EVENTOS_PRUEBA.find(
-            (e) => e.id === boleta.eventoId
-          );
-
           const nombreEvento =
-            boleta.nombreEvento ||
-            eventoPrueba?.nombre ||
-            "Boleta de evento";
+            boleta.nombreEvento || "Boleta de evento";
 
           return (
 

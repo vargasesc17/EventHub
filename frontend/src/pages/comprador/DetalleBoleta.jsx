@@ -4,7 +4,6 @@ import { QRCodeSVG } from "qrcode.react";
 import Pagina from "../../components/Pagina";
 import { useSesion } from "../../sesion/Sesion";
 import { obtenerMisBoletas } from "../../storage/misBoletas";
-import { EVENTOS_PRUEBA } from "../../data/eventosPrueba";
 
 // ESTILO DE LOS BOTONES
 
@@ -58,14 +57,8 @@ export default function DetalleBoleta() {
 
   // INFORMACIÓN DEL EVENTO
 
-  const eventoPrueba = EVENTOS_PRUEBA.find(
-    (e) => e.id === boleta?.eventoId
-  );
-
   const nombreEvento =
-    boleta?.nombreEvento ||
-    eventoPrueba?.nombre ||
-    "Información del evento";
+    boleta?.nombreEvento || "Información del evento";
 
   return (
 

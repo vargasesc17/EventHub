@@ -6,8 +6,6 @@ import EstadoCarga from "../../components/EstadoCarga";
 import { obtenerEvento } from "../../api/eventos";
 import useConsulta from "../../api/useConsulta";
 
-import { EVENTOS_PRUEBA } from "../../data/eventosPrueba";
-
 // ESTILO GENERAL DE LOS BOTONES
 
 const buttonStyle =
@@ -40,26 +38,14 @@ export default function DetalleEvento() {
 
   const { eventoId } = useParams();
 
-// CONSULTAR EVENTOS DE PRUEBA O REALES
+  // CONSULTAR EVENTO REAL DEL BACKEND
 
-const consultarEvento = async (id) => {
+  const {
+    datos: evento,
+    cargando,
+    error,
+  } = useConsulta(obtenerEvento, eventoId);
 
-  const eventoPrueba = EVENTOS_PRUEBA.find(
-    (e) => e.id === id
-  );
-
-  if (eventoPrueba) {
-    return eventoPrueba;
-  }
-
-  return obtenerEvento(id);
-};
-
-const {
-  datos: evento,
-  cargando,
-  error,
-} = useConsulta(consultarEvento, eventoId);
   return (
 
     <Pagina titulo={evento?.nombre || "Detalle del evento"}>

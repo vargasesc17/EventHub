@@ -1,7 +1,11 @@
+
 import { Link } from "react-router-dom";
 
 import Pagina from "../../components/Pagina";
-import { EVENTOS_PRUEBA } from "../../data/eventosPrueba";
+import EstadoCarga from "../../components/EstadoCarga";
+
+import useConsulta from "../../api/useConsulta";
+import { obtenerCatalogo } from "../../api/eventos";
 
 // ESTILO DE LOS BOTONES
 
@@ -35,43 +39,45 @@ function Icono({ tipo, size = 24 }) {
     >
 
       {tipo === "calendario" && (
+
         <>
           <rect x="3" y="5" width="18" height="16" rx="3" />
           <path d="M16 3v4M8 3v4M3 10h18" />
           <path d="M8 15h2m4 0h2" />
         </>
+
       )}
 
       {tipo === "ubicacion" && (
+
         <>
           <path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z" />
           <circle cx="12" cy="10" r="3" />
         </>
+
       )}
 
       {tipo === "personas" && (
+
         <>
           <circle cx="9" cy="7" r="4" />
           <path d="M2 21v-3a7 7 0 0 1 14 0v3" />
           <path d="M17 4a4 4 0 0 1 0 8M18 15a5 5 0 0 1 4 5" />
         </>
+
       )}
 
       {tipo === "qr" && (
+
         <>
           <rect x="3" y="3" width="7" height="7" rx="1" />
           <rect x="14" y="3" width="7" height="7" rx="1" />
           <rect x="3" y="14" width="7" height="7" rx="1" />
+
           <path d="M14 14h3v3h-3z" />
           <path d="M21 14v3M14 21h3M21 21v-1" />
         </>
-      )}
 
-      {tipo === "info" && (
-        <>
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 11v6M12 7h.01" />
-        </>
       )}
 
     </svg>
@@ -84,6 +90,8 @@ function Icono({ tipo, size = 24 }) {
 
 function formatearFecha(fecha) {
 
+  if (!fecha) return "No disponible";
+
   return new Date(fecha).toLocaleString("es-CO", {
     day: "numeric",
     month: "long",
@@ -94,7 +102,29 @@ function formatearFecha(fecha) {
 
 }
 
+// ESTILOS SEGÚN EL ESTADO DEL EVENTO
+
+const coloresEstado = {
+
+  PUBLICADO: "bg-[#e9e1f8] text-[#5524bf]",
+
+  EN_CURSO: "bg-[#d9f5e5] text-[#187442]",
+
+  FINALIZADO: "bg-gray-200 text-[#373d4d]",
+
+  CANCELADO: "bg-red-100 text-red-700",
+
+};
+
 export default function CheckinSelector() {
+
+  // CONSULTAR EVENTOS REALES DEL BACKEND
+
+  const {
+    datos: eventos,
+    cargando,
+    error,
+  } = useConsulta(obtenerCatalogo);
 
   return (
 
@@ -127,271 +157,294 @@ export default function CheckinSelector() {
 
       </div>
 
-      {/* AVISO DE DEMOSTRACIÓN */}
+      {/* ESTADO DE CARGA Y ERRORES */}
 
-      <section className="
-        mb-8 flex items-start gap-4
-        rounded-[25px]
-        border-2 border-[#d5c9e7]
-        bg-[#f5f2fa] p-5
-      ">
+      <EstadoCarga
+        cargando={cargando}
+        error={error}
+      />
 
-        <div className="
-          flex size-[45px] shrink-0
-          items-center justify-center
-          rounded-full bg-[#e9e1f8]
-          text-[#5524bf]
+      {/* NO HAY EVENTOS DISPONIBLES */}
+
+      {!cargando && !error && !eventos?.length && (
+
+        <section className="
+          mx-auto flex max-w-[650px]
+          flex-col items-center gap-5
+          rounded-[40px]
+          bg-white p-8 sm:p-10
+          text-center shadow-sm
         ">
 
-          <Icono tipo="info" />
-
-        </div>
-
-        <div>
-
-          <h3 className="
-            font-inter-bold text-[18px]
-            text-[#260477]
+          <div className="
+            flex size-[100px]
+            items-center justify-center
+            rounded-full
+            bg-[#e9e1f8] text-[#69529b]
           ">
 
-            Modo de demostración
+            <Icono tipo="qr" size={48} />
 
-          </h3>
+          </div>
+
+          <h2 className="
+            font-inter-bold font-bold!
+            text-[26px] text-[#260477]
+          ">
+
+            No hay eventos disponibles
+
+          </h2>
 
           <p className="
-            mt-1 font-inter-semibold
-            text-[15px] text-[#69529b]
+            font-inter-semibold
+            text-[17px] leading-relaxed
+            text-[#69529b]
           ">
 
-            Estos eventos son de prueba. El listado de
-            eventos asignados al Staff y la validación
-            real de boletas están pendientes de la
-            integración del backend (#24).
+            Actualmente no hay eventos disponibles
+            en el catálogo para realizar el Check-in.
+            Vuelve a consultar más tarde.
 
           </p>
 
-        </div>
+        </section>
 
-      </section>
+      )}
 
       {/* LISTADO DE EVENTOS */}
 
-      <section className="
-        grid grid-cols-1
-        gap-6
-        sm:grid-cols-2
-        xl:grid-cols-4
-      ">
+      {!cargando && !error && (
 
-        {EVENTOS_PRUEBA.map((evento) => (
+        <section
+          className="
+            grid grid-cols-1
+            gap-6
+            sm:grid-cols-2
+            xl:grid-cols-4
+          "
+          aria-label="Eventos disponibles para check-in"
+        >
 
-          <article
-            key={evento.id}
-            className="
-              flex min-w-0 flex-col
-              overflow-hidden
-              rounded-[35px]
-              border-2 border-[#9682b8]
-              bg-white shadow-sm
-              transition-all duration-200
-              hover:-translate-y-1
-              hover:shadow-lg
-            "
-          >
+          {eventos?.map((evento) => (
 
-            {/* ENCABEZADO MORADO */}
+            <article
+              key={evento.id}
+              className="
+                flex min-w-0 flex-col
+                overflow-hidden
+                rounded-[35px]
+                border-2 border-[#9682b8]
+                bg-white shadow-sm
+                transition-all duration-200
+                hover:-translate-y-1
+                hover:shadow-lg
+              "
+            >
 
-            <header className="
-              flex min-h-[190px]
-              flex-col items-center
-              justify-center gap-4
-              bg-[#69529b] p-6
-              text-center text-white
-            ">
+              {/* ENCABEZADO MORADO */}
 
-              <div className="
-                flex size-[70px]
-                items-center justify-center
-                rounded-[25px]
-                bg-white/20
-              ">
-
-                <Icono tipo="qr" size={38} />
-
-              </div>
-
-              <h2 className="
-                font-inter-bold font-bold!
-                text-[24px] leading-snug
-              ">
-
-                {evento.nombre}
-
-              </h2>
-
-            </header>
-
-            {/* INFORMACIÓN DEL EVENTO */}
-
-            <div className="
-              flex flex-1 flex-col
-              gap-4 p-5
-            ">
-
-              {/* ESTADO */}
-
-              <span className="
-                w-fit rounded-full
-                bg-[#e9e1f8] px-4 py-2
-                font-inter-bold
-                text-[13px] text-[#5524bf]
-              ">
-
-                Evento de prueba
-
-              </span>
-
-              {/* UBICACIÓN */}
-
-              <div className="
-                flex items-start gap-3
-                rounded-[25px]
-                bg-[#f5f2fa] p-4
+              <header className="
+                flex min-h-[190px]
+                flex-col items-center
+                justify-center gap-4
+                bg-[#69529b] p-6
+                text-center text-white
               ">
 
                 <div className="
-                  shrink-0 text-[#69529b]
+                  flex size-[70px]
+                  items-center justify-center
+                  rounded-[25px]
+                  bg-white/20
                 ">
 
-                  <Icono tipo="ubicacion" />
+                  <Icono tipo="qr" size={38} />
 
                 </div>
 
-                <div className="min-w-0">
+                <h2 className="
+                  font-inter-bold font-bold!
+                  text-[24px] leading-snug
+                  break-words
+                ">
 
-                  <p className="
-                    font-inter-semibold
-                    text-[13px] text-[#69529b]
-                  ">
+                  {evento.nombre}
 
-                    Lugar
+                </h2>
 
-                  </p>
+              </header>
 
-                  <p className="
-                    mt-1 break-words
-                    font-inter-bold
-                    text-[16px] text-[#0f0140]
-                  ">
-
-                    {evento.lugar}
-
-                  </p>
-
-                </div>
-
-              </div>
-
-              {/* FECHA */}
+              {/* INFORMACIÓN DEL EVENTO */}
 
               <div className="
-                flex items-start gap-3
-                rounded-[25px]
-                bg-[#f5f2fa] p-4
+                flex flex-1 flex-col
+                gap-4 p-5
               ">
 
+                {/* ESTADO DEL EVENTO */}
+
+                <span className={`
+                  w-fit rounded-full
+                  px-4 py-2
+                  font-inter-bold
+                  text-[13px]
+                  ${coloresEstado[evento.estado]
+                    || "bg-[#e9e1f8] text-[#5524bf]"}
+                `}>
+
+                  {evento.estado?.replaceAll("_", " ")
+                    || "Sin estado"}
+
+                </span>
+
+                {/* UBICACIÓN */}
+
                 <div className="
-                  shrink-0 text-[#69529b]
+                  flex items-start gap-3
+                  rounded-[25px]
+                  bg-[#f5f2fa] p-4
                 ">
 
-                  <Icono tipo="calendario" />
+                  <div className="
+                    shrink-0 text-[#69529b]
+                  ">
+
+                    <Icono tipo="ubicacion" />
+
+                  </div>
+
+                  <div className="min-w-0">
+
+                    <p className="
+                      font-inter-semibold
+                      text-[13px] text-[#69529b]
+                    ">
+
+                      Lugar
+
+                    </p>
+
+                    <p className="
+                      mt-1 break-words
+                      font-inter-bold
+                      text-[16px] text-[#0f0140]
+                    ">
+
+                      {evento.lugar || "No disponible"}
+
+                    </p>
+
+                  </div>
 
                 </div>
 
-                <div>
+                {/* FECHA */}
 
-                  <p className="
-                    font-inter-semibold
-                    text-[13px] text-[#69529b]
+                <div className="
+                  flex items-start gap-3
+                  rounded-[25px]
+                  bg-[#f5f2fa] p-4
+                ">
+
+                  <div className="
+                    shrink-0 text-[#69529b]
                   ">
 
-                    Fecha del evento
+                    <Icono tipo="calendario" />
 
-                  </p>
+                  </div>
 
-                  <p className="
-                    mt-1 font-inter-bold
-                    text-[15px] text-[#0f0140]
-                  ">
+                  <div className="min-w-0">
 
-                    {formatearFecha(evento.fechaInicio)}
+                    <p className="
+                      font-inter-semibold
+                      text-[13px] text-[#69529b]
+                    ">
 
-                  </p>
+                      Fecha del evento
+
+                    </p>
+
+                    <p className="
+                      mt-1 font-inter-bold
+                      text-[15px] text-[#0f0140]
+                    ">
+
+                      {formatearFecha(evento.fechaInicio)}
+
+                    </p>
+
+                  </div>
 
                 </div>
+
+                {/* AFORO */}
+
+                <div className="
+                  flex items-start gap-3
+                  rounded-[25px]
+                  bg-[#f5f2fa] p-4
+                ">
+
+                  <div className="
+                    shrink-0 text-[#69529b]
+                  ">
+
+                    <Icono tipo="personas" />
+
+                  </div>
+
+                  <div>
+
+                    <p className="
+                      font-inter-semibold
+                      text-[13px] text-[#69529b]
+                    ">
+
+                      Aforo máximo
+
+                    </p>
+
+                    <p className="
+                      mt-1 font-inter-bold
+                      text-[17px] text-[#0f0140]
+                    ">
+
+                      {evento.aforoMaximo != null
+                        ? `${evento.aforoMaximo} personas`
+                        : "No disponible"}
+
+                    </p>
+
+                  </div>
+
+                </div>
+
+                {/* BOTÓN CHECK-IN */}
+
+                <Link
+                  to={`/checkin/${evento.id}`}
+                  className={`${buttonStyle}
+                    mt-auto w-full gap-2
+                  `}
+                >
+
+                  <Icono tipo="qr" size={21} />
+
+                  Abrir Check-in
+
+                </Link>
 
               </div>
 
-              {/* AFORO */}
+            </article>
 
-              <div className="
-                flex items-start gap-3
-                rounded-[25px]
-                bg-[#f5f2fa] p-4
-              ">
+          ))}
 
-                <div className="
-                  shrink-0 text-[#69529b]
-                ">
+        </section>
 
-                  <Icono tipo="personas" />
-
-                </div>
-
-                <div>
-
-                  <p className="
-                    font-inter-semibold
-                    text-[13px] text-[#69529b]
-                  ">
-
-                    Aforo máximo
-
-                  </p>
-
-                  <p className="
-                    mt-1 font-inter-bold
-                    text-[17px] text-[#0f0140]
-                  ">
-
-                    {evento.aforoMaximo} personas
-
-                  </p>
-
-                </div>
-
-              </div>
-
-              {/* BOTÓN CHECK-IN */}
-
-              <Link
-                to={`/checkin/${evento.id}`}
-                className={`${buttonStyle} mt-auto w-full gap-2`}
-              >
-
-                <Icono tipo="qr" size={21} />
-
-                Abrir Check-in
-
-              </Link>
-
-            </div>
-
-          </article>
-
-        ))}
-
-      </section>
+      )}
 
     </Pagina>
 
