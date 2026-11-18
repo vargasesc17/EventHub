@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import Pagina from "../../components/Pagina";
 import { useSesion } from "../../sesion/Sesion";
 import { obtenerMisBoletas } from "../../storage/misBoletas";
+import { useEffect, useState } from "react";
+import { obtenerEvento } from "../../api/eventos";
 
 // ESTILO GENERAL DE LOS BOTONES
 
@@ -50,6 +52,21 @@ export default function Boletas() {
     error = e.message;
 
   }
+  // ESTADO ACTUAL DE CADA EVENTO
+  // "Mis boletas" es una copia guardada al comprar: el estado del evento se consulta a la API
+  // para saber si se canceló después.
+
+  const [estadoEvento, setEstadoEvento] = useState({});
+
+  useEffect(() => {
+    const ids = [...new Set(boletas.map((b) => b.eventoId))];
+    Promise.all(
+        ids.map((id) =>
+            obtenerEvento(id).then((e) => [id, e.estado]).catch(() => [id, null])
+        )
+    ).then((pares) => setEstadoEvento(Object.fromEntries(pares)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usuario.id]);
 
   return (
 
@@ -173,6 +190,7 @@ export default function Boletas() {
 
           const nombreEvento =
             boleta.nombreEvento || "Boleta de evento";
+          const cancelada = estadoEvento[boleta.eventoId] === "CANCELADO";
 
           return (
 
@@ -187,10 +205,11 @@ export default function Boletas() {
               {/* ENCABEZADO */}
 
               <header
-                className={`${
-                  coloresCategorias[boleta.categoria] ||
-                  "bg-[#260477]"
-                } p-6 text-white`}
+                  className={`${
+                      cancelada
+                          ? "bg-gray-400"
+                          : coloresCategorias[boleta.categoria] || "bg-[#260477]"
+                  } p-6 text-white`}
               >
 
                 <p className="font-inter-semibold
@@ -265,7 +284,7 @@ export default function Boletas() {
                   <p className="font-inter-bold
                     text-[18px] text-[#0f0140]">
 
-                    {boleta.estado || "No disponible"}
+                    {cancelada ? "CANCELADA (evento cancelado)" : boleta.estado || "No disponible"}
 
                   </p>
 
@@ -339,9 +358,11 @@ export default function Boletas() {
                   font-inter-semibold
                   text-[13px] text-[#69529b]">
 
-                  {boleta.codigoQr
-                    ? "Consulta los detalles y tu código QR"
-                    : "Consulta los detalles de tu boleta"}
+                  {cancelada
+                      ? "El evento fue cancelado: esta boleta ya no sirve para ingresar"
+                      : boleta.codigoQr
+                          ? "Consulta los detalles y tu código QR"
+                          : "Consulta los detalles de tu boleta"}
 
                 </p>
 
