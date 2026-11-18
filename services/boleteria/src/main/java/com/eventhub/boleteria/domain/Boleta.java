@@ -28,6 +28,15 @@ public abstract class Boleta {
         this.fechaCompra = fechaCompra;
     }
 
+    /**
+     * ¿Esta boleta puede entrar al evento? Solo si está ACTIVA (pagada y sin usar).
+     * Es final a propósito: la regla es la MISMA para VIP, General, Estudiante y Cortesía, y
+     * ninguna subclase la puede cambiar. Así el check-in trata a cualquier Boleta igual (LSP, #24).
+     */
+    public final boolean puedeIngresar() {
+        return estado == EstadoBoleta.ACTIVA;
+    }
+
     /** Cada subclase dice qué tipo es. */
     public abstract TipoBoleta categoria();
 
