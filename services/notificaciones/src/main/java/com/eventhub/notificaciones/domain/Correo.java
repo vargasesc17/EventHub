@@ -14,6 +14,11 @@ public record Correo(String para, String asunto, String cuerpoHtml, byte[] qrPng
         }
     }
 
+    /** Un correo sin imagen del QR (alertas y recordatorios). */
+    public static Correo sinQr(String para, String asunto, String cuerpoHtml) {
+        return new Correo(para, asunto, cuerpoHtml, null);
+    }
+
     public boolean tieneQr() {
         return qrPng != null;
     }

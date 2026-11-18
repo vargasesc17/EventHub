@@ -9,13 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,10 +17,10 @@ import static org.junit.jupiter.api.Assertions.*;
 /** El caso de uso se prueba con puertos falsos en memoria: sin RabbitMQ, base de datos ni correo. */
 class ProcesarBoletaCompradaUseCaseTest {
 
-    private final MensajesEnMemoria mensajes = new MensajesEnMemoria();
-    private final EventosEnMemoria eventos = new EventosEnMemoria();
-    private final CompradoresEnMemoria compradores = new CompradoresEnMemoria();
-    private final CorreosEnMemoria correos = new CorreosEnMemoria();
+    private final PuertosEnMemoria.Mensajes mensajes = new PuertosEnMemoria.Mensajes();
+    private final PuertosEnMemoria.Eventos eventos = new PuertosEnMemoria.Eventos();
+    private final PuertosEnMemoria.Compradores compradores = new PuertosEnMemoria.Compradores();
+    private final PuertosEnMemoria.Correos correos = new PuertosEnMemoria.Correos();
     private final GeneradorImagenQr qrFalso = contenido -> ("PNG:" + contenido).getBytes();
     private final Clock reloj = Clock.fixed(Instant.parse("2026-11-15T19:30:05Z"), ZoneOffset.UTC);
 
@@ -98,38 +92,5 @@ class ProcesarBoletaCompradaUseCaseTest {
         assertThrows(IllegalStateException.class, () -> casoDeUso.ejecutar(comando));
 
         assertFalse(mensajes.yaProcesado(comando.messageId()));
-    }
-
-    // ---- Puertos falsos en memoria ----
-
-    static class MensajesEnMemoria implements MensajeProcesadoRepository {
-        final Set<UUID> procesados = new HashSet<>();
-        public boolean yaProcesado(UUID messageId) { return procesados.contains(messageId); }
-        public void registrar(UUID messageId, String tipo, Instant procesadoEn) { procesados.add(messageId); }
-    }
-
-    static class EventosEnMemoria implements EventoRepository {
-        final Map<UUID, EventoLocal> eventos = new HashMap<>();
-        public Optional<EventoLocal> buscar(UUID eventoId) { return Optional.ofNullable(eventos.get(eventoId)); }
-        public void guardar(EventoLocal evento) { eventos.put(evento.info().eventoId(), evento); }
-    }
-
-    static class CompradoresEnMemoria implements CompradorRepository {
-        final Map<UUID, CompradorEvento> porBoleta = new HashMap<>();
-        public void guardarSiNoExiste(CompradorEvento c) { porBoleta.putIfAbsent(c.boletaId(), c); }
-        public List<CompradorEvento> buscarPorEvento(UUID eventoId) {
-            return porBoleta.values().stream().filter(c -> c.eventoId().equals(eventoId)).toList();
-        }
-    }
-
-    static class CorreosEnMemoria implements EnviadorCorreo {
-        final List<Correo> enviados = new ArrayList<>();
-        boolean fallar;
-        public void enviar(Correo correo) {
-            if (fallar) {
-                throw new IllegalStateException("El servidor de correo no responde");
-            }
-            enviados.add(correo);
-        }
     }
 }
