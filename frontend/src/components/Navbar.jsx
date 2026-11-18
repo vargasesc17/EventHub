@@ -63,12 +63,13 @@ export default function Navbar() {
 
   // CERRAR LOS MENÚS AL CAMBIAR DE PÁGINA
 
-  useEffect(() => {
-
+  // Se ajusta durante el render, sin useEffect, para no causar un render de más.
+  const [rutaAnterior, setRutaAnterior] = useState(location.pathname);
+  if (rutaAnterior !== location.pathname) {
+    setRutaAnterior(location.pathname);
     setIsMenuOpen(false);
     setIsProfileOpen(false);
-
-  }, [location.pathname]);
+  }
 
   // CERRAR EL PERFIL AL HACER CLIC AFUERA
 

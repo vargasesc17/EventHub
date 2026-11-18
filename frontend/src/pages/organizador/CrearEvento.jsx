@@ -190,7 +190,7 @@ export default function CrearEvento() {
       // Regresar a la vista del organizador
       navigate("/organizador");
 
-    } catch (err) {
+    } catch {
 
       setError(
         "No se pudo completar la solicitud. " +
