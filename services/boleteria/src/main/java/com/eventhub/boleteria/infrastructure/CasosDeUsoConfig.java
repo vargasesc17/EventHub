@@ -33,6 +33,12 @@ public class CasosDeUsoConfig {
     }
 
     @Bean
+    CheckInUseCase checkInUseCase(ValidadorQr validadorQr, BoletaRepository boletas, CheckInRepository checkIns,
+                                  Clock reloj) {
+        return new CheckInUseCase(validadorQr, boletas, checkIns, reloj);
+    }
+
+    @Bean
     ConsultarAforoUseCase consultarAforoUseCase(AforoRepository aforos, InventarioRepository inventarios) {
         return new ConsultarAforoUseCase(aforos, inventarios);
     }
