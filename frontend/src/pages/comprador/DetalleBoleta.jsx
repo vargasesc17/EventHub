@@ -303,6 +303,23 @@ export default function DetalleBoleta() {
 
                   Presenta este código QR al personal
                   de ingreso del evento.
+                  {/* El staff no tiene cámara en la demo: el código se copia y se pega en el check-in */}
+                  <div className="mt-4 w-full max-w-[420px] rounded-[20px] bg-[#f5f2fa] p-4">
+                    <p className="text-[13px] font-semibold text-[#69529b]">
+                      Código de la boleta
+                    </p>
+                    <p className="mt-1 break-all font-mono text-[12px] text-[#0f0140]">
+                      {boleta.codigoQr}
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => navigator.clipboard.writeText(boleta.codigoQr)}
+                        className="mt-3 rounded-full! bg-[#5524bf]! px-5! py-2!
+                      text-[14px] font-bold! text-white! border-0!"
+                    >
+                      Copiar código
+                    </button>
+                  </div>
 
                 </p>
 
