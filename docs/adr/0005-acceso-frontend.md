@@ -1,6 +1,6 @@
 # ADR-0005: Cómo accede el frontend a los microservicios
 
-**Estado:** Propuesto — pendiente de decisión de Karol (responsable) y revisión de Carlos y David
+**Estado:** Aceptado
 **Fecha:** 2026-11-09
 **Decisores:** Karol Esquivel, Carlos Vargas, David Murcia
 **Responsable:** Karol Esquivel
@@ -24,8 +24,6 @@ Usar **Nginx como punto único de entrada**, en el mismo contenedor que sirve la
 - `/api/boleteria/**` → microservicio Boletería.
 
 Como la página y la API se sirven desde el **mismo origen**, el navegador no aplica CORS. El frontend solo conoce rutas relativas (`/api/...`).
-
-> **Nota sobre el diagrama C2:** el borrador de Contenedores muestra un "API Gateway [Spring Cloud Gateway]" separado de la aplicación web. Si se acepta este ADR, hay que actualizarlo: la Aplicación Web pasa a ser `[Contenedor: React + Nginx]` y asume el papel de gateway.
 
 ## Opciones consideradas
 
