@@ -299,8 +299,9 @@ Si la sentencia afecta 0 filas, no había cupo y la compra se rechaza con 409. T
 - **No falsificable:** sin la clave no se puede calcular la firma de otra boleta, aunque se conozca el código de una.
 - **Comparación segura:** la firma se compara con `MessageDigest.isEqual` (tiempo constante), para no filtrar información por tiempos de respuesta.
 - **Uso único:** el check-in cambia la boleta de ACTIVA a USADA de forma atómica (RNF-01).
+- **Boleta del evento correcto:** el staff valida en la entrada de un evento concreto (`eventoId`); un QR auténtico de otro evento se rechaza y no se marca como usada.
 
-**Cómo lo verificamos.** [`ValidacionQrHmacTest`](../services/boleteria/src/test/java/com/eventhub/boleteria/infrastructure/qr/ValidacionQrHmacTest.java): una letra cambiada en la firma se rechaza, poner la firma de una boleta en otra se rechaza y un QR firmado con otra clave se rechaza. [`GeneradorQrHmacTest`](../services/boleteria/src/test/java/com/eventhub/boleteria/infrastructure/qr/GeneradorQrHmacTest.java): el servicio no arranca sin secreto. [`CheckInDePuntaAPuntaTest`](../services/boleteria/src/test/java/com/eventhub/boleteria/CheckInDePuntaAPuntaTest.java): con el QR de la compra se entra una sola vez, y un QR alterado responde 409.
+**Cómo lo verificamos.** [`ValidacionQrHmacTest`](../services/boleteria/src/test/java/com/eventhub/boleteria/infrastructure/qr/ValidacionQrHmacTest.java): una letra cambiada en la firma se rechaza, poner la firma de una boleta en otra se rechaza y un QR firmado con otra clave se rechaza. [`GeneradorQrHmacTest`](../services/boleteria/src/test/java/com/eventhub/boleteria/infrastructure/qr/GeneradorQrHmacTest.java): el servicio no arranca sin secreto. [`CheckInDePuntaAPuntaTest`](../services/boleteria/src/test/java/com/eventhub/boleteria/CheckInDePuntaAPuntaTest.java): con el QR de la compra se entra una sola vez, un QR alterado responde 409 y en la entrada de otro evento se rechaza sin gastar la boleta (`enLaEntradaDeOtroEventoSeRechazaYLaBoletaSigueActiva`).
 
 ### RNF-04: Rendimiento
 
