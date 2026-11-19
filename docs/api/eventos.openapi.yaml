@@ -45,7 +45,8 @@ paths:
       tags:
       - Eventos
       summary: Editar un evento
-      description: Solo se puede editar mientras está en BORRADOR.
+      description: "Solo se puede editar mientras está en BORRADOR, y la fecha debe\
+        \ seguir siendo futura."
       operationId: editar
       parameters:
       - name: id
@@ -90,8 +91,10 @@ paths:
       tags:
       - Eventos
       summary: Reprogramar fecha o lugar
-      description: Cambia la fecha y/o el lugar de un evento publicado. Publica `evento.actualizado`
-        para que Boletería y Notificaciones se enteren.
+      description: "Solo para eventos PUBLICADOS. `fechaInicio` y `lugar` son opcionales;\
+        \ si ninguno cambia, responde 200 sin guardar ni avisar. Si cambia algo, publica\
+        \ UN `evento.actualizado` con todos los cambios y los valores anteriores,\
+        \ y Notificaciones avisa a los compradores."
       operationId: reprogramar
       parameters:
       - name: id
@@ -108,7 +111,7 @@ paths:
         required: true
       responses:
         "200":
-          description: Evento reprogramado
+          description: Evento reprogramado (o sin cambios)
           content:
             '*/*':
               schema:
@@ -130,11 +133,9 @@ paths:
     post:
       tags:
       - Eventos
-      summary: Reprogramar fecha o lugar
-      description: "Solo para eventos PUBLICADOS. `fechaInicio` y `lugar` son opcionales;\
-        \ si ninguno cambia, responde 200 sin guardar ni avisar. Si cambia algo, publica\
-        \ UN `evento.actualizado` con todos los cambios y los valores anteriores,\
-        \ y Notificaciones avisa a los compradores."
+      summary: Crear un evento
+      description: El evento nace en BORRADOR. La fecha de inicio debe ser futura
+        y debe tener al menos una categoría de boleta; la cortesía tiene precio 0.
       operationId: crear
       requestBody:
         content:
@@ -143,14 +144,14 @@ paths:
               $ref: "#/components/schemas/CrearEventoRequest"
         required: true
       responses:
-        "200":
-          description: Evento reprogramado (o sin cambios)
+        "201":
+          description: Evento creado en BORRADOR
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/EventoResponse"
-        "404":
-          description: No existe el evento
+        "400":
+          description: Campos obligatorios vacíos o inválidos
           content:
             '*/*':
               schema:
@@ -267,8 +268,10 @@ paths:
       tags:
       - Eventos
       summary: Cancelar un evento
-      description: "Pasa a CANCELADO. Publica `evento.actualizado`: Boletería bloquea\
-        \ las ventas y cancela las boletas vendidas; Notificaciones avisa a los compradores."
+      description: "BORRADOR o PUBLICADO → CANCELADO. Si estaba publicado, publica\
+        \ `evento.actualizado`: Boletería bloquea las ventas y cancela las boletas\
+        \ vendidas; Notificaciones avisa a los compradores. Un borrador se cancela\
+        \ sin publicar nada."
       operationId: cancelar
       parameters:
       - name: id
@@ -291,7 +294,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EventoResponse"
         "422":
-          description: El evento ya terminó o ya estaba cancelado
+          description: "El evento está EN_CURSO, FINALIZADO o ya CANCELADO"
           content:
             '*/*':
               schema:
@@ -301,7 +304,8 @@ paths:
       tags:
       - Eventos
       summary: Catálogo
-      description: Eventos que el comprador puede ver (publicados y en curso).
+      description: "Eventos PUBLICADOS cuya fecha de inicio todavía no llega (RF-06).\
+        \ Los que están en curso, finalizados o cancelados no aparecen."
       operationId: catalogo
       responses:
         "200":
