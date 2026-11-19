@@ -21,9 +21,9 @@ paths:
       - Check-in
       summary: Validar el QR de una boleta
       description: |-
-        El código tiene la forma `boletaId.firma` (HMAC-SHA256, ADR-0004). Si la firma es válida y la
-        boleta está ACTIVA, se marca USADA de forma atómica: el mismo QR no entra dos veces.
-        Siempre responde con el motivo.
+        El código tiene la forma `boletaId.firma` (HMAC-SHA256, ADR-0004). Si la firma es válida, la
+        boleta es del evento indicado en `eventoId` y está ACTIVA, se marca USADA de forma atómica:
+        el mismo QR no entra dos veces. Siempre responde con el motivo.
       operationId: validar
       requestBody:
         content:
@@ -39,13 +39,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/ResultadoCheckIn"
         "409":
-          description: "Rechazado: QR alterado, boleta ya usada o cancelada"
+          description: "Rechazado: QR alterado, boleta de otro evento, ya usada o\
+            \ cancelada"
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultadoCheckIn"
         "400":
-          description: Falta el código o el staffId
+          description: "Falta el código, el eventoId o el staffId"
           content:
             '*/*':
               schema:
@@ -141,11 +142,15 @@ components:
         codigoQr:
           type: string
           minLength: 1
+        eventoId:
+          type: string
+          format: uuid
         staffId:
           type: string
           format: uuid
       required:
       - codigoQr
+      - eventoId
       - staffId
     ResultadoCheckIn:
       type: object

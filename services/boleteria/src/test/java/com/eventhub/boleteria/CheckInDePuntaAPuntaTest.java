@@ -66,9 +66,13 @@ class CheckInDePuntaAPuntaTest {
     }
 
     private ResultActions checkIn(String codigoQr) throws Exception {
+        return checkIn(codigoQr, eventoId);
+    }
+
+    private ResultActions checkIn(String codigoQr, UUID enLaEntradaDe) throws Exception {
         var cuerpo = """
-                {"codigoQr": "%s", "staffId": "%s"}
-                """.formatted(codigoQr, staffId);
+                {"codigoQr": "%s", "eventoId": "%s", "staffId": "%s"}
+                """.formatted(codigoQr, enLaEntradaDe, staffId);
         return mockMvc.perform(post("/checkin").contentType(MediaType.APPLICATION_JSON).content(cuerpo));
     }
 
@@ -103,7 +107,27 @@ class CheckInDePuntaAPuntaTest {
     @Test
     void sinStaffDevuelve400() throws Exception {
         mockMvc.perform(post("/checkin").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"codigoQr\": \"x.y\"}"))
+                        .content("{\"codigoQr\": \"x.y\", \"eventoId\": \"" + eventoId + "\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void sinEventoDevuelve400() throws Exception {
+        mockMvc.perform(post("/checkin").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"codigoQr\": \"x.y\", \"staffId\": \"" + staffId + "\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void enLaEntradaDeOtroEventoSeRechazaYLaBoletaSigueActiva() throws Exception {
+        var qr = comprarYObtenerQr();
+        var boletaId = UUID.fromString(qr.substring(0, qr.indexOf('.')));
+
+        checkIn(qr, UUID.randomUUID()).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.aceptado").value(false))
+                .andExpect(jsonPath("$.motivo").value("La boleta es de otro evento"));
+
+        assertEquals("ACTIVA", boletasJpa.findById(boletaId).orElseThrow().getEstado().name());
+        assertTrue(checkInsJpa.findByBoletaId(boletaId).isEmpty());
     }
 }

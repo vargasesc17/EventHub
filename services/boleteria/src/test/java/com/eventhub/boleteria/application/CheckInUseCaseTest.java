@@ -52,7 +52,7 @@ class CheckInUseCaseTest {
         var boleta = general(EstadoBoleta.ACTIVA);
         boletas.guardar(boleta);
 
-        var resultado = checkIn.validar(qr(boleta), staffId);
+        var resultado = checkIn.validar(qr(boleta), eventoId, staffId);
 
         assertTrue(resultado.aceptado());
         assertEquals(TipoBoleta.GENERAL, resultado.categoria());
@@ -69,8 +69,8 @@ class CheckInUseCaseTest {
         var boleta = general(EstadoBoleta.ACTIVA);
         boletas.guardar(boleta);
 
-        checkIn.validar(qr(boleta), staffId);
-        var segunda = checkIn.validar(qr(boleta), UUID.randomUUID());
+        checkIn.validar(qr(boleta), eventoId, staffId);
+        var segunda = checkIn.validar(qr(boleta), eventoId, UUID.randomUUID());
 
         assertFalse(segunda.aceptado());
         assertEquals("La boleta ya fue usada", segunda.motivo());
@@ -82,7 +82,7 @@ class CheckInUseCaseTest {
         var boleta = general(EstadoBoleta.ACTIVA);
         boletas.guardar(boleta);
 
-        var resultado = checkIn.validar(boleta.getId() + ".firma-cambiada", staffId);
+        var resultado = checkIn.validar(boleta.getId() + ".firma-cambiada", eventoId, staffId);
 
         assertFalse(resultado.aceptado());
         assertTrue(resultado.motivo().startsWith("QR inválido"));
@@ -92,7 +92,7 @@ class CheckInUseCaseTest {
 
     @Test
     void unaBoletaQueNoExisteSeRechaza() {
-        var resultado = checkIn.validar(UUID.randomUUID() + ".ok", staffId);
+        var resultado = checkIn.validar(UUID.randomUUID() + ".ok", eventoId, staffId);
 
         assertFalse(resultado.aceptado());
         assertEquals("La boleta no existe", resultado.motivo());
@@ -105,8 +105,8 @@ class CheckInUseCaseTest {
         boletas.guardar(cancelada);
         boletas.guardar(reservada);
 
-        assertEquals("La boleta está cancelada", checkIn.validar(qr(cancelada), staffId).motivo());
-        assertFalse(checkIn.validar(qr(reservada), staffId).aceptado());
+        assertEquals("La boleta está cancelada", checkIn.validar(qr(cancelada), eventoId, staffId).motivo());
+        assertFalse(checkIn.validar(qr(reservada), eventoId, staffId).aceptado());
         assertTrue(checkIns.isEmpty());
     }
 
@@ -124,14 +124,34 @@ class CheckInUseCaseTest {
         todas.forEach(boletas::guardar);
 
         for (Boleta boleta : todas) {
-            assertTrue(checkIn.validar(qr(boleta), staffId).aceptado(), "Primer ingreso de " + boleta.categoria());
-            assertFalse(checkIn.validar(qr(boleta), staffId).aceptado(), "Segundo ingreso de " + boleta.categoria());
+            assertTrue(checkIn.validar(qr(boleta), eventoId, staffId).aceptado(), "Primer ingreso de " + boleta.categoria());
+            assertFalse(checkIn.validar(qr(boleta), eventoId, staffId).aceptado(), "Segundo ingreso de " + boleta.categoria());
         }
         assertEquals(4, checkIns.size());
     }
 
     @Test
     void sinStaffNoSePuedeHacerCheckIn() {
-        assertThrows(IllegalArgumentException.class, () -> checkIn.validar(UUID.randomUUID() + ".ok", null));
+        assertThrows(IllegalArgumentException.class, () -> checkIn.validar(UUID.randomUUID() + ".ok", eventoId, null));
+    }
+
+    @Test
+    void unaBoletaDeOtroEventoNoEntraYNoSeGasta() {
+        var deOtroEvento = new BoletaGeneral(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 80_000,
+                EstadoBoleta.ACTIVA, compra);
+        boletas.guardar(deOtroEvento);
+
+        var resultado = checkIn.validar(qr(deOtroEvento), eventoId, staffId);
+
+        assertFalse(resultado.aceptado());
+        assertEquals("La boleta es de otro evento", resultado.motivo());
+        assertTrue(checkIns.isEmpty());
+        // No se marcó como usada: en la entrada de SU evento todavía puede entrar.
+        assertTrue(checkIn.validar(qr(deOtroEvento), deOtroEvento.getEventoId(), staffId).aceptado());
+    }
+
+    @Test
+    void sinEventoNoSePuedeHacerCheckIn() {
+        assertThrows(IllegalArgumentException.class, () -> checkIn.validar(UUID.randomUUID() + ".ok", null, staffId));
     }
 }

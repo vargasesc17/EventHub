@@ -218,6 +218,34 @@ Vendidas frente al aforo, por categoría (RF-05).
 
 Para la pantalla de compra sirve también: `disponibles` dice qué categorías quedan, y `aceptaVentas` si el evento sigue a la venta. Ojo: aquí el campo se llama `categoria`, mientras que en Eventos se llama `tipo`.
 
+### `POST /api/boleteria/checkin` · Check-in (staff)
+
+El staff está en la entrada de **un** evento y valida el QR de cada asistente (RF-03).
+
+```json
+{
+  "codigoQr": "5d8e1f20-3a4b-4c6d-8e9f-0a1b2c3d4e5f.Qm9sZXRhRmlybWFkYUNvbkhNQUM",
+  "eventoId": "3c1f9d2e-8a4b-4f6c-9e1d-2b7a5c8e0f13",
+  "staffId": "11111111-2222-3333-4444-555555555555"
+}
+```
+
+**200** la persona entra:
+```json
+{ "aceptado": true, "motivo": null, "boletaId": "5d8e1f20-3a4b-4c6d-8e9f-0a1b2c3d4e5f", "categoria": "VIP" }
+```
+
+**409** no entra. Es una respuesta normal de negocio, con el mismo cuerpo y el motivo para mostrar:
+```json
+{ "aceptado": false, "motivo": "La boleta es de otro evento", "boletaId": "5d8e1f20-...", "categoria": null }
+```
+
+Motivos posibles: `QR inválido: fue alterado o no lo emitió EventHub`, `La boleta no existe`, `La boleta es de otro evento`, `La boleta ya fue usada`, `La boleta está cancelada`.
+
+**400** si falta `codigoQr`, `eventoId` o `staffId`.
+
+Una boleta de otro evento **no se marca como usada**: sigue sirviendo en la entrada de su propio evento.
+
 ---
 
 ## Qué endpoint usa cada pantalla
@@ -230,11 +258,10 @@ Para la pantalla de compra sirve también: `disponibles` dice qué categorías q
 | Organizador: crear y editar | `POST /api/eventos`, `PUT /api/eventos/{id}` |
 | Organizador: publicar, cancelar, reprogramar | `POST /api/eventos/{id}/publicar`, `/cancelar`, `PATCH /api/eventos/{id}` |
 | Organizador: aforo | `GET /api/boleteria/eventos/{id}/aforo` |
-| Check-in | Pendiente del #24 |
+| Check-in | `GET /api/eventos/{id}`, `POST /api/boleteria/checkin` |
 
 ## Lo que todavía no existe
 
-- **Check-in** (validar el QR y marcar la boleta como usada): es el #24.
 - **"Mis boletas"**: no hay endpoint para listar las boletas de un comprador. Por ahora, guardar en el navegador la respuesta de cada compra.
 - **"Mis eventos" del organizador**: el catálogo solo trae los publicados; no hay forma de listar los borradores. Por ahora, guardar el `id` que devuelve `POST /api/eventos`.
 - **Notificaciones**: no tiene API; los correos se ven en Mailpit (http://localhost:8025).

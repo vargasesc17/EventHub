@@ -101,10 +101,11 @@ export default function CheckinDetalle() {
 
     try {
 
-      // ENVIAR EL QR Y EL ID DEL STAFF
+      // ENVIAR EL QR, EL EVENTO DE ESTA ENTRADA Y EL ID DEL STAFF
 
       const r = await registrarCheckIn({
         codigoQr: codigoQr.trim(),
+        eventoId,
         staffId: usuario.id,
       });
 
