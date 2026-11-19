@@ -11,10 +11,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.UUID;
 
 @RestController
+@Tag(name = "Boletas", description = "Compra de boletas y consulta de aforo")
 public class BoletaController {
 
     private final ComprarBoletaUseCase comprar;
@@ -30,12 +34,28 @@ public class BoletaController {
 
     /** Toda la compra en UNA transacción: si el pago falla, el cupo descontado vuelve. */
     @PostMapping("/boletas")
+    @Operation(summary = "Comprar una boleta",
+            description = """
+                La fábrica del tipo (Factory Method) arma la boleta y la estrategia de la categoría (Strategy)
+                calcula el precio. El cupo se descuenta con un UPDATE atómico, así que nunca se vende de más.
+                ESTUDIANTE exige `carnetEstudiantil`; CORTESIA exige `emitidaPor` y no se cobra.
+                Al terminar se publica `boleta.comprada` (correo con QR) y, si se cruza el 90 %, `evento.aforo.critico`.""")
+    @ApiResponse(responseCode = "201", description = "Boleta comprada; incluye el código QR firmado")
+    @ApiResponse(responseCode = "400", description = "Campos inválidos o JSON mal formado")
+    @ApiResponse(responseCode = "402", description = "La pasarela rechazó el pago")
+    @ApiResponse(responseCode = "404", description = "Boletería no conoce el evento")
+    @ApiResponse(responseCode = "409", description = "No quedan cupos en esa categoría")
+    @ApiResponse(responseCode = "422", description = "Evento no a la venta, categoría no vendida, falta carnet o emisor...")
     public ResponseEntity<CompraResponse> comprar(@Valid @RequestBody CompraRequest request) {
         var compra = transaccion.execute(estado -> comprar.comprar(request.aCompra()));
         return ResponseEntity.status(HttpStatus.CREATED).body(CompraResponse.desde(compra));
     }
 
     @GetMapping("/eventos/{eventoId}/aforo")
+    @Operation(summary = "Consultar el aforo de un evento",
+            description = "Cupos, disponibles y vendidas por categoría, con su precio base y tipo de precio.")
+    @ApiResponse(responseCode = "200", description = "Aforo por categoría")
+    @ApiResponse(responseCode = "404", description = "Boletería no conoce el evento")
     public AforoResponse aforo(@PathVariable UUID eventoId) {
         return AforoResponse.desde(consultarAforo.consultar(eventoId));
     }
