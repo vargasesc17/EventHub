@@ -32,14 +32,14 @@ public class Evento {
         this.categorias = List.copyOf(categorias);
     }
 
-    /** Un evento NUEVO: genera su id y siempre empieza en BORRADOR. */
+    /** Un evento NUEVO: genera su id, siempre empieza en BORRADOR y no puede programarse en el pasado. */
     public static Evento crear(String nombre, String lugar, Instant fechaInicio, int aforoMaximo,
                                UUID organizadorId, String organizadorCorreo,
-                               List<CategoriaBoleta> categorias) {
+                               List<CategoriaBoleta> categorias, Instant ahora) {
+        exigirFechaFutura(fechaInicio, ahora);
         return new Evento(UUID.randomUUID(), nombre, lugar, fechaInicio, aforoMaximo,
                 organizadorId, organizadorCorreo, EstadoEvento.BORRADOR, categorias);
     }
-
     /** Un evento que YA EXISTE (viene de la base): conserva su id y su estado. */
     public static Evento reconstruir(UUID id, String nombre, String lugar, Instant fechaInicio, int aforoMaximo,
                                      UUID organizadorId, String organizadorCorreo, EstadoEvento estado,
@@ -49,12 +49,13 @@ public class Evento {
 
     /** Solo se puede editar en BORRADOR (decisión del #19). */
     public void editar(String nombre, String lugar, Instant fechaInicio, int aforoMaximo,
-                       List<CategoriaBoleta> categorias) {
+                       List<CategoriaBoleta> categorias, Instant ahora) {
         if (estado != EstadoEvento.BORRADOR) {
             throw new ReglaDeNegocioException("Solo se puede editar un evento en estado BORRADOR (estado: " + estado + ")");
         }
-
+        exigirFechaFutura(fechaInicio, ahora);
         validar(nombre, lugar, fechaInicio, aforoMaximo, categorias);
+        // ... el resto igual
 
         this.nombre = nombre;
         this.lugar = lugar;
@@ -69,11 +70,12 @@ public class Evento {
     public void cancelar()  { cambiarEstado(EstadoEvento.CANCELADO); }
 
     /** Cambia la fecha de un evento ya publicado. Hay compradores que avisar (RF-04). */
-    public void cambiarFecha(Instant nueva) {
+    public void cambiarFecha(Instant nueva, Instant ahora) {
         exigirPublicado("cambiar la fecha");
         if (nueva == null) {
             throw new ReglaDeNegocioException("La fecha de inicio del evento es obligatoria");
         }
+        exigirFechaFutura(nueva, ahora);
         this.fechaInicio = nueva;
     }
 
@@ -98,6 +100,17 @@ public class Evento {
         if (estado != EstadoEvento.PUBLICADO) {
             throw new ReglaDeNegocioException(
                     "Solo se puede " + accion + " de un evento PUBLICADO (estado: " + estado + ")");
+        }
+    }
+
+    /** Programar o reprogramar exige una fecha futura. Si es null, lo reporta validar con su mensaje. */
+    private static void exigirFechaFutura(Instant fechaInicio, Instant ahora) {
+        if (ahora == null) {
+            throw new IllegalArgumentException("Se necesita la hora actual para validar la fecha");
+        }
+        if (fechaInicio != null && !fechaInicio.isAfter(ahora)) {
+            throw new ReglaDeNegocioException("La fecha de inicio debe ser futura (recibida: " + fechaInicio
+                    + ", ahora: " + ahora + ")");
         }
     }
 

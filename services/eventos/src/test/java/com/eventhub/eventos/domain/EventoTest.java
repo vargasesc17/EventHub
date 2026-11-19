@@ -18,6 +18,7 @@ class EventoTest {
 
     private final Instant fechaFutura = Instant.now().plus(30, ChronoUnit.DAYS);
     private final UUID organizadorId = UUID.randomUUID();
+    private final Instant ahora = Instant.now();
 
     private List<CategoriaBoleta> categoriasValidas() {
         return List.of(
@@ -27,7 +28,7 @@ class EventoTest {
 
     private Evento eventoEnBorrador() {
         return Evento.crear("Concierto", "Movistar Arena", fechaFutura, 1000,
-                organizadorId, "org@correo.com", categoriasValidas());
+                organizadorId, "org@correo.com", categoriasValidas(), ahora);
     }
 
     private Evento eventoEnEstado(EstadoEvento estado) {
@@ -59,7 +60,7 @@ class EventoTest {
 
         var error = assertThrows(ReglaDeNegocioException.class, () ->
                 Evento.crear("Concierto", "Movistar Arena", fechaFutura, 1000,
-                        organizadorId, "org@correo.com", categorias));
+                        organizadorId, "org@correo.com", categorias, ahora));
 
         assertTrue(error.getMessage().contains("1100"));
     }
@@ -74,14 +75,14 @@ class EventoTest {
     void rechazaEventoSinCategorias() {
         assertThrows(ReglaDeNegocioException.class, () ->
                 Evento.crear("Concierto", "Movistar Arena", fechaFutura, 1000,
-                        organizadorId, "org@correo.com", List.of()));
+                        organizadorId, "org@correo.com", List.of(), ahora));
     }
 
     @Test
     void rechazaCategoriasNulas() {
         assertThrows(ReglaDeNegocioException.class, () ->
                 Evento.crear("Concierto", "Movistar Arena", fechaFutura, 1000,
-                        organizadorId, "org@correo.com", null));
+                        organizadorId, "org@correo.com", null, ahora));
     }
 
     @ParameterizedTest
@@ -89,7 +90,7 @@ class EventoTest {
     void rechazaAforoQueNoSeaPositivo(int aforo) {
         assertThrows(ReglaDeNegocioException.class, () ->
                 Evento.crear("Concierto", "Movistar Arena", fechaFutura, aforo,
-                        organizadorId, "org@correo.com", categoriasValidas()));
+                        organizadorId, "org@correo.com", categoriasValidas(), ahora));
     }
 
     @ParameterizedTest
@@ -98,7 +99,7 @@ class EventoTest {
     void rechazaNombreVacio(String nombre) {
         assertThrows(ReglaDeNegocioException.class, () ->
                 Evento.crear(nombre, "Movistar Arena", fechaFutura, 1000,
-                        organizadorId, "org@correo.com", categoriasValidas()));
+                        organizadorId, "org@correo.com", categoriasValidas(), ahora));
     }
 
     @ParameterizedTest
@@ -107,14 +108,51 @@ class EventoTest {
     void rechazaLugarVacio(String lugar) {
         assertThrows(ReglaDeNegocioException.class, () ->
                 Evento.crear("Concierto", lugar, fechaFutura, 1000,
-                        organizadorId, "org@correo.com", categoriasValidas()));
+                        organizadorId, "org@correo.com", categoriasValidas(), ahora));
     }
 
     @Test
     void rechazaFechaNula() {
         assertThrows(ReglaDeNegocioException.class, () ->
                 Evento.crear("Concierto", "Movistar Arena", null, 1000,
-                        organizadorId, "org@correo.com", categoriasValidas()));
+                        organizadorId, "org@correo.com", categoriasValidas(), ahora));
+    }
+
+    @Test
+    void rechazaCrearUnEventoEnElPasado() {
+        var ayer = ahora.minus(1, ChronoUnit.DAYS);
+
+        var error = assertThrows(ReglaDeNegocioException.class, () ->
+                Evento.crear("Concierto", "Movistar Arena", ayer, 1000,
+                        organizadorId, "org@correo.com", categoriasValidas(), ahora));
+
+        assertTrue(error.getMessage().contains("futura"));
+    }
+
+    @Test
+    void rechazaCrearUnEventoJustoAhora() {
+        assertThrows(ReglaDeNegocioException.class, () ->
+                Evento.crear("Concierto", "Movistar Arena", ahora, 1000,
+                        organizadorId, "org@correo.com", categoriasValidas(), ahora));
+    }
+
+    @Test
+    void rechazaEditarHaciaElPasado() {
+        var evento = eventoEnBorrador();
+
+        assertThrows(ReglaDeNegocioException.class, () ->
+                evento.editar("Concierto", "Movistar Arena", ahora.minus(1, ChronoUnit.HOURS), 1000,
+                        categoriasValidas(), ahora));
+        assertEquals(fechaFutura, evento.getFechaInicio());   // no cambió nada
+    }
+
+    @Test
+    void reconstruirAceptaEventosQueYaPasaron() {
+        var hace30Dias = ahora.minus(30, ChronoUnit.DAYS);
+
+        assertDoesNotThrow(() -> Evento.reconstruir(UUID.randomUUID(), "Concierto", "Movistar Arena",
+                hace30Dias, 1000, organizadorId, "org@correo.com", EstadoEvento.FINALIZADO,
+                categoriasValidas()));
     }
 
     // ---------------------------------------------------------- reconstruir
@@ -145,7 +183,7 @@ class EventoTest {
         var otraFecha = fechaFutura.plus(10, ChronoUnit.DAYS);
         var nuevas = List.of(new CategoriaBoleta(TipoBoleta.GENERAL, 1500, 80_000));
 
-        evento.editar("Festival", "Parque Simón Bolívar", otraFecha, 2000, nuevas);
+        evento.editar("Festival", "Parque Simón Bolívar", otraFecha, 2000, nuevas, ahora);
 
         assertEquals("Festival", evento.getNombre());
         assertEquals("Parque Simón Bolívar", evento.getLugar());
@@ -160,7 +198,7 @@ class EventoTest {
         var evento = eventoEnEstado(estado);
 
         assertThrows(ReglaDeNegocioException.class, () ->
-                evento.editar("Festival", "Parque Simón Bolívar", fechaFutura, 2000, categoriasValidas()));
+                evento.editar("Festival", "Parque Simón Bolívar", fechaFutura, 2000, categoriasValidas(), ahora));
         assertEquals("Concierto", evento.getNombre());
     }
 
@@ -170,7 +208,7 @@ class EventoTest {
         var excedidas = List.of(new CategoriaBoleta(TipoBoleta.GENERAL, 5000, 50_000));
 
         var error = assertThrows(ReglaDeNegocioException.class, () ->
-                evento.editar("Festival", "Parque Simón Bolívar", fechaFutura, 1000, excedidas));
+                evento.editar("Festival", "Parque Simón Bolívar", fechaFutura, 1000, excedidas, ahora));
 
         // Debe fallar por los cupos, no por otra razón
         assertTrue(error.getMessage().contains("cupos"));
@@ -193,7 +231,7 @@ class EventoTest {
     void crearCopiaLaListaRecibida() {
         var lista = new ArrayList<>(List.of(new CategoriaBoleta(TipoBoleta.GENERAL, 500, 50_000)));
         var evento = Evento.crear("Concierto", "Movistar Arena", fechaFutura, 1000,
-                organizadorId, "org@correo.com", lista);
+                organizadorId, "org@correo.com", lista, ahora);
 
         lista.add(new CategoriaBoleta(TipoBoleta.VIP, 600, 150_000)); // ahora sumaría 1100
 
@@ -205,7 +243,7 @@ class EventoTest {
         var evento = eventoEnBorrador();
         var lista = new ArrayList<>(List.of(new CategoriaBoleta(TipoBoleta.GENERAL, 500, 50_000)));
 
-        evento.editar("Concierto", "Movistar Arena", fechaFutura, 1000, lista);
+        evento.editar("Concierto", "Movistar Arena", fechaFutura, 1000, lista, ahora);
         lista.add(new CategoriaBoleta(TipoBoleta.VIP, 600, 150_000)); // ahora sumaría 1100
 
         assertEquals(1, evento.getCategorias().size());

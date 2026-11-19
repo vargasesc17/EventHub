@@ -21,6 +21,7 @@ class EventoCicloDeVidaTest {
             "EN_CURSO->FINALIZADO");
 
     private final Instant fechaFutura = Instant.now().plus(30, ChronoUnit.DAYS);
+    private final Instant ahora = Instant.now();
 
     private Evento eventoEnEstado(EstadoEvento estado) {
         return Evento.reconstruir(UUID.randomUUID(), "Concierto", "Movistar Arena", fechaFutura, 1000,
@@ -105,7 +106,7 @@ class EventoCicloDeVidaTest {
         var evento = eventoEnEstado(EstadoEvento.PUBLICADO);
         var nuevaFecha = fechaFutura.plus(2, ChronoUnit.DAYS);
 
-        evento.cambiarFecha(nuevaFecha);
+        evento.cambiarFecha(nuevaFecha, ahora);
         evento.cambiarLugar("Coliseo, Chía");
 
         assertEquals(nuevaFecha, evento.getFechaInicio());
@@ -117,7 +118,7 @@ class EventoCicloDeVidaTest {
     void fechaYLugarSoloCambianEnPublicado(EstadoEvento estado) {
         var evento = eventoEnEstado(estado);
 
-        assertThrows(ReglaDeNegocioException.class, () -> evento.cambiarFecha(fechaFutura.plus(1, ChronoUnit.DAYS)));
+        assertThrows(ReglaDeNegocioException.class, () -> evento.cambiarFecha(fechaFutura.plus(1, ChronoUnit.DAYS), ahora));
         assertThrows(ReglaDeNegocioException.class, () -> evento.cambiarLugar("Otro lugar"));
         assertEquals(fechaFutura, evento.getFechaInicio());
         assertEquals("Movistar Arena", evento.getLugar());
@@ -127,7 +128,16 @@ class EventoCicloDeVidaTest {
     void rechazaFechaNulaYLugarVacio() {
         var evento = eventoEnEstado(EstadoEvento.PUBLICADO);
 
-        assertThrows(ReglaDeNegocioException.class, () -> evento.cambiarFecha(null));
+        assertThrows(ReglaDeNegocioException.class, () -> evento.cambiarFecha(null, ahora));
         assertThrows(ReglaDeNegocioException.class, () -> evento.cambiarLugar("  "));
+    }
+
+    @Test
+    void noSeReprogramaAlPasado() {
+        var evento = eventoEnEstado(EstadoEvento.PUBLICADO);
+
+        assertThrows(ReglaDeNegocioException.class,
+                () -> evento.cambiarFecha(ahora.minus(1, ChronoUnit.DAYS), ahora));
+        assertEquals(fechaFutura, evento.getFechaInicio());
     }
 }

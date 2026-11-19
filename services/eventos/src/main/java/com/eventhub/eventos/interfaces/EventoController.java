@@ -40,8 +40,7 @@ public class EventoController {
                     + "todos los cambios y los valores anteriores, y Notificaciones avisa a los compradores.")
     @ApiResponse(responseCode = "200", description = "Evento reprogramado (o sin cambios)")
     @ApiResponse(responseCode = "404", description = "No existe el evento")
-    @ApiResponse(responseCode = "422", description = "El evento no está PUBLICADO, o el lugar viene vacío")
-    @PostMapping
+    @ApiResponse(responseCode = "422", description = "Regla de negocio violada (fecha en el pasado, cupos o precio inválidos, suma de cupos mayor al aforo, cortesía con precio...)")    @PostMapping
     public ResponseEntity<EventoResponse> crear(@Valid @RequestBody CrearEventoRequest request) {
         var evento = gestionar.crear(request.aCommand());
         return ResponseEntity.created(URI.create("/eventos/" + evento.getId()))
@@ -61,8 +60,7 @@ public class EventoController {
     @ApiResponse(responseCode = "200", description = "Evento editado")
     @ApiResponse(responseCode = "400", description = "Campos inválidos")
     @ApiResponse(responseCode = "404", description = "No existe el evento")
-    @ApiResponse(responseCode = "422", description = "El evento ya no está en BORRADOR")
-    @PutMapping("/{id}")
+    @ApiResponse(responseCode = "422", description = "El evento ya no está en BORRADOR, o la nueva fecha está en el pasado")    @PutMapping("/{id}")
     public EventoResponse editar(@PathVariable UUID id, @Valid @RequestBody EditarEventoRequest request) {
         return EventoResponse.desde(gestionar.editar(id, request.aCommand()));
     }
@@ -112,8 +110,7 @@ public class EventoController {
                     + "para que Boletería y Notificaciones se enteren.")
     @ApiResponse(responseCode = "200", description = "Evento reprogramado")
     @ApiResponse(responseCode = "404", description = "No existe el evento")
-    @ApiResponse(responseCode = "422", description = "Fecha pasada o estado que no permite reprogramar")
-    @PatchMapping("/{id}")
+    @ApiResponse(responseCode = "422", description = "El evento no está PUBLICADO, la nueva fecha está en el pasado o el lugar viene vacío")    @PatchMapping("/{id}")
     public EventoResponse reprogramar(@PathVariable UUID id, @RequestBody ReprogramarEventoRequest request) {
         return EventoResponse.desde(gestionar.reprogramar(id, request.aCommand()));
     }

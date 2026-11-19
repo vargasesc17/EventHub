@@ -9,20 +9,24 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
+import java.time.Clock;
+
 
 public class GestionarEventoUseCase {
 
     private final EventoRepository repositorio;
     private final PublicadorEventos publicador;
+    private final Clock reloj;
 
-    public GestionarEventoUseCase(EventoRepository repositorio, PublicadorEventos publicador) {
+    public GestionarEventoUseCase(EventoRepository repositorio, PublicadorEventos publicador, Clock reloj) {
         this.repositorio = repositorio;
         this.publicador = publicador;
+        this.reloj = reloj;
     }
 
     public Evento crear(CrearEventoCommand datos) {
         var evento = Evento.crear(datos.nombre(), datos.lugar(), datos.fechaInicio(), datos.aforoMaximo(),
-                datos.organizadorId(), datos.organizadorCorreo(), datos.categorias());
+                datos.organizadorId(), datos.organizadorCorreo(), datos.categorias(), reloj.instant());
         repositorio.guardar(evento);
         return evento;
     }
@@ -30,7 +34,7 @@ public class GestionarEventoUseCase {
     public Evento editar(UUID id, EditarEventoCommand datos) {
         var evento = cargar(id);
         evento.editar(datos.nombre(), datos.lugar(), datos.fechaInicio(), datos.aforoMaximo(),
-                datos.categorias());
+                datos.categorias(), reloj.instant());
         repositorio.guardar(evento);
         return evento;
     }
@@ -78,7 +82,7 @@ public class GestionarEventoUseCase {
 
         if (datos.fechaInicio() != null && !datos.fechaInicio().equals(evento.getFechaInicio())) {
             fechaAnterior = evento.getFechaInicio();
-            evento.cambiarFecha(datos.fechaInicio());
+            evento.cambiarFecha(datos.fechaInicio(), reloj.instant());
             cambios.add(TipoCambio.FECHA);
         }
         if (datos.lugar() != null && !datos.lugar().equals(evento.getLugar())) {

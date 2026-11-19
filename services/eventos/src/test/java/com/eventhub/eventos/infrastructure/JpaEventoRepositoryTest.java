@@ -77,7 +77,7 @@ class JpaEventoRepositoryTest {
         sincronizar();
 
         evento.editar("Festival", "Parque Simón Bolívar", futuro, 500,
-                List.of(new CategoriaBoleta(TipoBoleta.ESTUDIANTE, 500, 30_000)));
+                List.of(new CategoriaBoleta(TipoBoleta.ESTUDIANTE, 500, 30_000)), Instant.now());
         repositorio.guardar(evento);
         sincronizar();
 

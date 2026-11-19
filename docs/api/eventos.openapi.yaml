@@ -80,7 +80,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/EventoResponse"
         "422":
-          description: El evento ya no está en BORRADOR
+          description: "El evento ya no está en BORRADOR, o la nueva fecha está en\
+            \ el pasado"
           content:
             '*/*':
               schema:
@@ -119,7 +120,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/EventoResponse"
         "422":
-          description: Fecha pasada o estado que no permite reprogramar
+          description: "El evento no está PUBLICADO, la nueva fecha está en el pasado\
+            \ o el lugar viene vacío"
           content:
             '*/*':
               schema:
@@ -128,9 +130,11 @@ paths:
     post:
       tags:
       - Eventos
-      summary: Crear un evento
-      description: El evento nace en BORRADOR. Debe tener al menos una categoría de
-        boleta; la cortesía tiene precio 0.
+      summary: Reprogramar fecha o lugar
+      description: "Solo para eventos PUBLICADOS. `fechaInicio` y `lugar` son opcionales;\
+        \ si ninguno cambia, responde 200 sin guardar ni avisar. Si cambia algo, publica\
+        \ UN `evento.actualizado` con todos los cambios y los valores anteriores,\
+        \ y Notificaciones avisa a los compradores."
       operationId: crear
       requestBody:
         content:
@@ -139,21 +143,21 @@ paths:
               $ref: "#/components/schemas/CrearEventoRequest"
         required: true
       responses:
-        "201":
-          description: Evento creado en BORRADOR
+        "200":
+          description: Evento reprogramado (o sin cambios)
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/EventoResponse"
-        "400":
-          description: Campos obligatorios vacíos o inválidos
+        "404":
+          description: No existe el evento
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/EventoResponse"
         "422":
-          description: "Regla de negocio violada (fecha pasada, cupos o precio invá\
-            lidos...)"
+          description: "Regla de negocio violada (fecha en el pasado, cupos o precio\
+            \ inválidos, suma de cupos mayor al aforo, cortesía con precio...)"
           content:
             '*/*':
               schema:

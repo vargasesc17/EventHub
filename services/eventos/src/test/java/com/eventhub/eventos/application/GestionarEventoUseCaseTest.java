@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
+import java.time.Clock;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,7 +18,9 @@ class GestionarEventoUseCaseTest {
 
     private final EventoRepositoryEnMemoria repositorio = new EventoRepositoryEnMemoria();
     private final GestionarEventoUseCase casoDeUso =
-            new GestionarEventoUseCase(repositorio, new PublicadorEventosEnMemoria());    private final Instant fechaFutura = Instant.now().plus(30, ChronoUnit.DAYS);
+            new GestionarEventoUseCase(repositorio, new PublicadorEventosEnMemoria(), Clock.systemUTC());
+
+    private final Instant fechaFutura = Instant.now().plus(30, ChronoUnit.DAYS);
 
     private CrearEventoCommand datosValidos() {
         return new CrearEventoCommand("Concierto", "Movistar Arena", fechaFutura, 1000,

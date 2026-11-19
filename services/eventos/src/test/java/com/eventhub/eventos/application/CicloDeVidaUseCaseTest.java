@@ -8,6 +8,7 @@ import com.eventhub.eventos.domain.TipoBoleta;
 import com.eventhub.eventos.domain.TipoCambio;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -20,7 +21,7 @@ class CicloDeVidaUseCaseTest {
 
     private final EventoRepositoryEnMemoria repositorio = new EventoRepositoryEnMemoria();
     private final PublicadorEventosEnMemoria publicador = new PublicadorEventosEnMemoria();
-    private final GestionarEventoUseCase casoDeUso = new GestionarEventoUseCase(repositorio, publicador);
+    private final GestionarEventoUseCase casoDeUso = new GestionarEventoUseCase(repositorio, publicador, Clock.systemUTC());
     private final Instant fechaOriginal = Instant.now().plus(30, ChronoUnit.DAYS);
 
     private UUID guardarEnEstado(EstadoEvento estado) {
