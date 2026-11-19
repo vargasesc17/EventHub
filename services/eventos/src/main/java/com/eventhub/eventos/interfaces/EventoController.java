@@ -34,13 +34,13 @@ public class EventoController {
         this.consultar = consultar;
     }
 
-    @Operation(summary = "Reprogramar fecha o lugar",
-            description = "Solo para eventos PUBLICADOS. `fechaInicio` y `lugar` son opcionales; si ninguno cambia, "
-                    + "responde 200 sin guardar ni avisar. Si cambia algo, publica UN `evento.actualizado` con "
-                    + "todos los cambios y los valores anteriores, y Notificaciones avisa a los compradores.")
-    @ApiResponse(responseCode = "200", description = "Evento reprogramado (o sin cambios)")
-    @ApiResponse(responseCode = "404", description = "No existe el evento")
-    @ApiResponse(responseCode = "422", description = "Regla de negocio violada (fecha en el pasado, cupos o precio inválidos, suma de cupos mayor al aforo, cortesía con precio...)")    @PostMapping
+    @Operation(summary = "Crear un evento",
+            description = "El evento nace en BORRADOR. La fecha de inicio debe ser futura y debe tener al menos "
+                    + "una categoría de boleta; la cortesía tiene precio 0.")
+    @ApiResponse(responseCode = "201", description = "Evento creado en BORRADOR")
+    @ApiResponse(responseCode = "400", description = "Campos obligatorios vacíos o inválidos")
+    @ApiResponse(responseCode = "422", description = "Regla de negocio violada (fecha en el pasado, cupos o precio inválidos, suma de cupos mayor al aforo, cortesía con precio...)")
+    @PostMapping
     public ResponseEntity<EventoResponse> crear(@Valid @RequestBody CrearEventoRequest request) {
         var evento = gestionar.crear(request.aCommand());
         return ResponseEntity.created(URI.create("/eventos/" + evento.getId()))
@@ -56,11 +56,12 @@ public class EventoController {
     }
 
     @Operation(summary = "Editar un evento",
-            description = "Solo se puede editar mientras está en BORRADOR.")
+            description = "Solo se puede editar mientras está en BORRADOR, y la fecha debe seguir siendo futura.")
     @ApiResponse(responseCode = "200", description = "Evento editado")
     @ApiResponse(responseCode = "400", description = "Campos inválidos")
     @ApiResponse(responseCode = "404", description = "No existe el evento")
-    @ApiResponse(responseCode = "422", description = "El evento ya no está en BORRADOR, o la nueva fecha está en el pasado")    @PutMapping("/{id}")
+    @ApiResponse(responseCode = "422", description = "El evento ya no está en BORRADOR, o la nueva fecha está en el pasado")
+    @PutMapping("/{id}")
     public EventoResponse editar(@PathVariable UUID id, @Valid @RequestBody EditarEventoRequest request) {
         return EventoResponse.desde(gestionar.editar(id, request.aCommand()));
     }
@@ -95,27 +96,32 @@ public class EventoController {
     }
 
     @Operation(summary = "Cancelar un evento",
-            description = "Pasa a CANCELADO. Publica `evento.actualizado`: Boletería bloquea las ventas y "
-                    + "cancela las boletas vendidas; Notificaciones avisa a los compradores.")
+            description = "BORRADOR o PUBLICADO → CANCELADO. Si estaba publicado, publica `evento.actualizado`: "
+                    + "Boletería bloquea las ventas y cancela las boletas vendidas; Notificaciones avisa "
+                    + "a los compradores. Un borrador se cancela sin publicar nada.")
     @ApiResponse(responseCode = "200", description = "Evento cancelado")
     @ApiResponse(responseCode = "404", description = "No existe el evento")
-    @ApiResponse(responseCode = "422", description = "El evento ya terminó o ya estaba cancelado")
+    @ApiResponse(responseCode = "422", description = "El evento está EN_CURSO, FINALIZADO o ya CANCELADO")
     @PostMapping("/{id}/cancelar")
     public EventoResponse cancelar(@PathVariable UUID id) {
         return EventoResponse.desde(gestionar.cancelar(id));
     }
 
     @Operation(summary = "Reprogramar fecha o lugar",
-            description = "Cambia la fecha y/o el lugar de un evento publicado. Publica `evento.actualizado` "
-                    + "para que Boletería y Notificaciones se enteren.")
-    @ApiResponse(responseCode = "200", description = "Evento reprogramado")
+            description = "Solo para eventos PUBLICADOS. `fechaInicio` y `lugar` son opcionales; si ninguno cambia, "
+                    + "responde 200 sin guardar ni avisar. Si cambia algo, publica UN `evento.actualizado` con "
+                    + "todos los cambios y los valores anteriores, y Notificaciones avisa a los compradores.")
+    @ApiResponse(responseCode = "200", description = "Evento reprogramado (o sin cambios)")
     @ApiResponse(responseCode = "404", description = "No existe el evento")
-    @ApiResponse(responseCode = "422", description = "El evento no está PUBLICADO, la nueva fecha está en el pasado o el lugar viene vacío")    @PatchMapping("/{id}")
+    @ApiResponse(responseCode = "422", description = "El evento no está PUBLICADO, la nueva fecha está en el pasado o el lugar viene vacío")
+    @PatchMapping("/{id}")
     public EventoResponse reprogramar(@PathVariable UUID id, @RequestBody ReprogramarEventoRequest request) {
         return EventoResponse.desde(gestionar.reprogramar(id, request.aCommand()));
     }
 
-    @Operation(summary = "Catálogo", description = "Eventos que el comprador puede ver (publicados y en curso).")
+    @Operation(summary = "Catálogo",
+            description = "Eventos PUBLICADOS cuya fecha de inicio todavía no llega (RF-06). "
+                    + "Los que están en curso, finalizados o cancelados no aparecen.")
     @ApiResponse(responseCode = "200", description = "Lista de eventos")
     @GetMapping("/catalogo")
     public List<EventoResponse> catalogo() {

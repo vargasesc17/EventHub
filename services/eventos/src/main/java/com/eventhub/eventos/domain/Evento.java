@@ -55,7 +55,6 @@ public class Evento {
         }
         exigirFechaFutura(fechaInicio, ahora);
         validar(nombre, lugar, fechaInicio, aforoMaximo, categorias);
-        // ... el resto igual
 
         this.nombre = nombre;
         this.lugar = lugar;
