@@ -40,6 +40,13 @@ public class CasosDeUsoConfig {
     }
 
     @Bean
+    ConsultarBoletasDelCompradorUseCase consultarBoletasDelCompradorUseCase(BoletaRepository boletas,
+                                                                            AforoRepository aforos,
+                                                                            GeneradorQr generadorQr) {
+        return new ConsultarBoletasDelCompradorUseCase(boletas, aforos, generadorQr);
+    }
+
+    @Bean
     ConsultarAforoUseCase consultarAforoUseCase(AforoRepository aforos, InventarioRepository inventarios) {
         return new ConsultarAforoUseCase(aforos, inventarios);
     }

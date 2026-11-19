@@ -154,4 +154,25 @@ class RepositoriosJpaTest {
         assertEquals(EstadoBoleta.ACTIVA, boletas.buscar(deOtroEvento.getId()).orElseThrow().getEstado(),
                 "no toca boletas de otros eventos");
     }
+
+    @Test
+    void buscaLasBoletasDeUnCompradorDeLaMasRecienteALaMasAntigua() {
+        var compradorId = UUID.randomUUID();
+        var antigua = new BoletaGeneral(UUID.randomUUID(), eventoId, compradorId, 50_000, EstadoBoleta.ACTIVA,
+                Instant.parse("2030-05-01T10:00:00Z"));
+        var reciente = new BoletaVIP(UUID.randomUUID(), eventoId, compradorId, 150_000, EstadoBoleta.ACTIVA,
+                Instant.parse("2030-05-02T10:00:00Z"), List.of("Zona VIP"));
+        var deOtro = new BoletaGeneral(UUID.randomUUID(), eventoId, UUID.randomUUID(), 50_000, EstadoBoleta.ACTIVA,
+                Instant.parse("2030-05-03T10:00:00Z"));
+        boletas.guardar(antigua);
+        boletas.guardar(reciente);
+        boletas.guardar(deOtro);
+        sincronizar();
+
+        var encontradas = boletas.buscarPorComprador(compradorId);
+
+        assertEquals(List.of(reciente.getId(), antigua.getId()), encontradas.stream().map(Boleta::getId).toList());
+        assertInstanceOf(BoletaVIP.class, encontradas.get(0), "se reconstruye la subclase correcta");
+        assertTrue(boletas.buscarPorComprador(UUID.randomUUID()).isEmpty());
+    }
 }

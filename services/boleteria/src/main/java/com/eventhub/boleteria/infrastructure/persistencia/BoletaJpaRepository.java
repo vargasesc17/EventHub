@@ -13,6 +13,8 @@ import java.util.UUID;
 public interface BoletaJpaRepository extends JpaRepository<BoletaEntity, UUID> {
     long countByEventoId(UUID eventoId);
 
+    List<BoletaEntity> findByCompradorIdOrderByFechaCompraDesc(UUID compradorId);
+
     /**
      * ADR-0004: UPDATE boleta SET estado = 'USADA' WHERE id = :id AND estado = 'ACTIVA'.
      * La base evalúa la condición sobre la fila bloqueada: si dos escaneos llegan juntos, solo uno cambia la fila.

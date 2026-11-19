@@ -2,8 +2,10 @@ import { Link, useParams } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 
 import Pagina from "../../components/Pagina";
+import EstadoCarga from "../../components/EstadoCarga";
 import { useSesion } from "../../sesion/Sesion";
-import { obtenerMisBoletas } from "../../storage/misBoletas";
+import { obtenerBoletasDelComprador } from "../../api/boleteria";
+import useConsulta from "../../api/useConsulta";
 
 // ESTILO DE LOS BOTONES
 
@@ -38,22 +40,15 @@ export default function DetalleBoleta() {
   const { boletaId } = useParams();
   const { usuario } = useSesion();
 
-  let boleta;
-  let error;
+  // BUSCAR LA BOLETA ENTRE LAS DEL COMPRADOR (BOLETERÍA)
+  // Solo se encuentra si es de quien inició sesión.
 
-  // BUSCAR BOLETA GUARDADA
+  const { datos, cargando, error } = useConsulta(
+    obtenerBoletasDelComprador,
+    usuario.id
+  );
 
-  try {
-
-    boleta = obtenerMisBoletas(usuario.id).find(
-      (b) => (b.boletaId || b.id) === boletaId
-    );
-
-  } catch (e) {
-
-    error = e.message;
-
-  }
+  const boleta = datos?.find((b) => b.boletaId === boletaId);
 
   // INFORMACIÓN DEL EVENTO
 
@@ -74,19 +69,11 @@ export default function DetalleBoleta() {
         ← Volver a mis boletas
       </Link>
 
-      {/* MENSAJE DE ERROR */}
+      {/* CARGANDO O ERROR */}
 
-      {error ? (
+      <EstadoCarga cargando={cargando} error={error} />
 
-        <p
-          role="alert"
-          className="rounded-[25px] bg-red-100 p-5
-          font-inter-semibold text-red-700"
-        >
-          {error}
-        </p>
-
-      ) : !boleta ? (
+      {cargando || error ? null : !boleta ? (
 
         <section className="eh-panel rounded-[35px]! p-8!">
 
@@ -95,7 +82,7 @@ export default function DetalleBoleta() {
           </h2>
 
           <p className="mt-3 font-inter-semibold">
-            No se encontró esta boleta en tus compras guardadas.
+            No se encontró esta boleta entre tus compras.
           </p>
 
         </section>
@@ -131,6 +118,20 @@ export default function DetalleBoleta() {
 
             </h2>
 
+            {(boleta.fechaEvento || boleta.lugar) && (
+
+              <p className="mt-2 font-inter-semibold text-[16px]">
+
+                {[
+                  boleta.fechaEvento &&
+                    new Date(boleta.fechaEvento).toLocaleString("es-CO"),
+                  boleta.lugar,
+                ].filter(Boolean).join(" · ")}
+
+              </p>
+
+            )}
+
             <span className="mt-4 inline-block
               rounded-full border-2 border-white/50
               bg-white/20 px-6 py-2
@@ -160,7 +161,7 @@ export default function DetalleBoleta() {
               <p className="font-inter-bold
                 text-[20px] text-[#0f0140]">
 
-                {boleta.nombreComprador || usuario.nombre}
+                {usuario.nombre}
 
               </p>
 
@@ -331,7 +332,11 @@ export default function DetalleBoleta() {
                 bg-[#e9e1f8] p-5
                 font-inter-semibold text-[#69529b]">
 
-                Esta boleta no contiene un código QR.
+                {boleta.estado === "CANCELADA"
+                  ? "Esta boleta fue cancelada: ya no sirve para ingresar."
+                  : boleta.estado === "USADA"
+                  ? "Esta boleta ya se usó para ingresar al evento."
+                  : "Esta boleta no tiene un código QR disponible."}
 
               </p>
 
@@ -352,7 +357,7 @@ export default function DetalleBoleta() {
               <p className="mt-2 break-all
                 font-inter-semibold text-[13px]">
 
-                {boleta.boletaId || boleta.id}
+                {boleta.boletaId}
 
               </p>
 

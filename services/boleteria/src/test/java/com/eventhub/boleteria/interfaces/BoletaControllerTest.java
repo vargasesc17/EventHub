@@ -48,10 +48,14 @@ class BoletaControllerTest {
     }
 
     private ResultActions comprar(UUID evento, String categoria, String correo) throws Exception {
+        return comprar(evento, categoria, correo, UUID.randomUUID());
+    }
+
+    private ResultActions comprar(UUID evento, String categoria, String correo, UUID compradorId) throws Exception {
         var cuerpo = """
                 {"eventoId": "%s", "categoria": "%s", "compradorId": "%s",
                  "nombreComprador": "Ana Pérez", "correoComprador": "%s"}
-                """.formatted(evento, categoria, UUID.randomUUID(), correo);
+                """.formatted(evento, categoria, compradorId, correo);
         return mockMvc.perform(post("/boletas").contentType(MediaType.APPLICATION_JSON).content(cuerpo));
     }
 
@@ -113,5 +117,27 @@ class BoletaControllerTest {
     @Test
     void elAforoDeUnEventoDesconocidoDevuelve404() throws Exception {
         mockMvc.perform(get("/eventos/" + UUID.randomUUID() + "/aforo")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void misBoletasDevuelveLasDelCompradorConElNombreDelEventoYSuQr() throws Exception {
+        var compradorId = UUID.randomUUID();
+        comprar(eventoId, "VIP", "ana@correo.com", compradorId).andExpect(status().isCreated());
+        comprar(eventoId, "GENERAL", "otro@correo.com").andExpect(status().isCreated());   // de otra persona
+
+        mockMvc.perform(get("/boletas").param("compradorId", compradorId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].categoria").value("VIP"))
+                .andExpect(jsonPath("$[0].estado").value("ACTIVA"))
+                .andExpect(jsonPath("$[0].nombreEvento").value("Concierto"))
+                .andExpect(jsonPath("$[0].lugar").value("Movistar Arena"))
+                .andExpect(jsonPath("$[0].codigoQr").value(org.hamcrest.Matchers.matchesPattern(
+                        "[0-9a-f-]{36}\\.[A-Za-z0-9_-]{43}")));
+    }
+
+    @Test
+    void misBoletasSinCompradorDevuelve400() throws Exception {
+        mockMvc.perform(get("/boletas")).andExpect(status().isBadRequest());
     }
 }

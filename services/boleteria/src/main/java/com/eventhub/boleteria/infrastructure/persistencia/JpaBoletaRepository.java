@@ -45,6 +45,13 @@ public class JpaBoletaRepository implements BoletaRepository {
     }
 
     @Override
+    public List<Boleta> buscarPorComprador(UUID compradorId) {
+        return jpa.findByCompradorIdOrderByFechaCompraDesc(compradorId).stream()
+                .map(JpaBoletaRepository::aDominio)
+                .toList();
+    }
+
+    @Override
     public boolean marcarUsadaSiActiva(UUID boletaId) {
         return jpa.cambiarEstadoSi(boletaId, EstadoBoleta.ACTIVA, EstadoBoleta.USADA) == 1;
     }

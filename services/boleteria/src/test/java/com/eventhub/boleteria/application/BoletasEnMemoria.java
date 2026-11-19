@@ -36,6 +36,14 @@ class BoletasEnMemoria implements BoletaRepository {
         return guardadas.stream().filter(b -> b.getId().equals(boletaId)).findFirst();
     }
 
+    @Override
+    public List<Boleta> buscarPorComprador(UUID compradorId) {
+        return guardadas.stream()
+                .filter(b -> b.getCompradorId().equals(compradorId))
+                .sorted(java.util.Comparator.comparing(Boleta::getFechaCompra).reversed())
+                .toList();
+    }
+
     /** Igual que el UPDATE condicional: solo la primera vez, y solo si estaba ACTIVA. */
     @Override
     public boolean marcarUsadaSiActiva(UUID boletaId) {
