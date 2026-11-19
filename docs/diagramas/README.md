@@ -16,7 +16,7 @@ Cubre lo que pide el issue:
 - **Jerarquía de boletas:** `BoletaGeneral`, `BoletaVIP`, `BoletaEstudiante`, `BoletaCortesia`, y su fábrica (**Factory Method**: `FabricaBoleta` y una subclase por tipo).
 - **Strategy:** la interfaz `PrecioStrategy` con `PrecioFijo`, `PrecioEarlyBird` y `PrecioDinamico`.
 - **A qué microservicio pertenece cada clase:** un diagrama por servicio.
-- **ISP:** `CompraBoletaService` y `CheckInService` son interfaces separadas.
+- **ISP:** `CheckInService` es una interfaz aparte de la compra: el controlador de check-in no ve los métodos de comprar.
 - **DIP:** `ComprarBoletaUseCase` depende de abstracciones (`PrecioStrategy` y `FabricaBoleta`, a través de `RegistroEstrategias` y `RegistroFabricas`, y de puertos), no de clases concretas.
 - **Clean Architecture:** cada servicio tiene los paquetes `domain`, `application`, `infrastructure` e `interfaces` (la misma estructura del código de `services/`). Los controladores REST, los consumidores de RabbitMQ y las tareas programadas están en `interfaces`, porque son la entrada desde afuera. Los puertos (repositorios y publicadores) están en `application`: `domain` no depende de ninguna otra capa.
 
