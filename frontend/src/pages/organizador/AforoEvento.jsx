@@ -222,23 +222,23 @@ export default function AforoEvento() {
   }, [eventoId, permitido, actualizacion]);
 
   // DATOS DEL AFORO
-  // Ajustar estos nombres al contrato definitivo de Boletería.
+  // Contrato de GET /api/boleteria/eventos/{id}/aforo (docs/api/README.md):
+  // { aforoMaximo, vendidas, porcentajeVendido, categorias: [{ categoria, cupos, disponibles, vendidas }] }
 
-  const aforoMaximo = evento?.aforoMaximo;
+  const aforoMaximo = aforo?.aforoMaximo ?? evento?.aforoMaximo;
 
-  const cuposOcupados =
-    aforo?.cuposOcupados ??
-    aforo?.boletasVendidas ??
-    null;
+  const cuposOcupados = aforo?.vendidas ?? null;
 
   const cuposDisponibles =
-    aforo?.cuposDisponibles ??
-    null;
+    aforo?.categorias
+      ? aforo.categorias.reduce((total, c) => total + c.disponibles, 0)
+      : null;
 
   const porcentaje =
-    aforoMaximo > 0 && cuposOcupados !== null
+    aforo?.porcentajeVendido ??
+    (aforoMaximo > 0 && cuposOcupados !== null
       ? (cuposOcupados / aforoMaximo) * 100
-      : null;
+      : null);
 
   return (
 
@@ -492,13 +492,10 @@ export default function AforoEvento() {
                   );
 
                 const ocupados =
-                  datosCategoria?.cuposOcupados ??
-                  datosCategoria?.boletasVendidas ??
-                  null;
+                  datosCategoria?.vendidas ?? null;
 
                 const disponibles =
-                  datosCategoria?.cuposDisponibles ??
-                  null;
+                  datosCategoria?.disponibles ?? null;
 
                 const porcentajeCategoria =
                   categoria.cupos > 0 && ocupados !== null
