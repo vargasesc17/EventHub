@@ -34,12 +34,13 @@ public class EventoController {
         this.consultar = consultar;
     }
 
-    @Operation(summary = "Crear un evento",
-            description = "El evento nace en BORRADOR. Debe tener al menos una categoría de boleta; "
-                    + "la cortesía tiene precio 0.")
-    @ApiResponse(responseCode = "201", description = "Evento creado en BORRADOR")
-    @ApiResponse(responseCode = "400", description = "Campos obligatorios vacíos o inválidos")
-    @ApiResponse(responseCode = "422", description = "Regla de negocio violada (fecha pasada, cupos o precio inválidos...)")
+    @Operation(summary = "Reprogramar fecha o lugar",
+            description = "Solo para eventos PUBLICADOS. `fechaInicio` y `lugar` son opcionales; si ninguno cambia, "
+                    + "responde 200 sin guardar ni avisar. Si cambia algo, publica UN `evento.actualizado` con "
+                    + "todos los cambios y los valores anteriores, y Notificaciones avisa a los compradores.")
+    @ApiResponse(responseCode = "200", description = "Evento reprogramado (o sin cambios)")
+    @ApiResponse(responseCode = "404", description = "No existe el evento")
+    @ApiResponse(responseCode = "422", description = "El evento no está PUBLICADO, o el lugar viene vacío")
     @PostMapping
     public ResponseEntity<EventoResponse> crear(@Valid @RequestBody CrearEventoRequest request) {
         var evento = gestionar.crear(request.aCommand());
