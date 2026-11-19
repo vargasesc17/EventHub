@@ -163,29 +163,7 @@ export default function CrearEvento() {
         return;
       }
 
-      // Guardar el ID del evento en localStorage
-      // porque aún no existe el endpoint "Mis eventos"
-
-      const clave = `misEventos:${usuario.id}`;
-
-      try {
-        const eventosGuardados = JSON.parse(
-          localStorage.getItem(clave) || "[]"
-        );
-
-        localStorage.setItem(
-          clave,
-          JSON.stringify([
-            ...new Set([...eventosGuardados, resultado.id]),
-          ])
-        );
-      } catch {
-        setError(
-          `El evento fue creado con ID ${resultado.id}, ` +
-          "pero no se pudo guardar en el navegador."
-        );
-        return;
-      }
+      // "Mis eventos" se consulta a Eventos por organizador: ya no se guarda en el navegador.
 
       // Regresar a la vista del organizador
       navigate("/organizador");

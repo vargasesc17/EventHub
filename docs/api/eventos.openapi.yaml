@@ -130,6 +130,39 @@ paths:
               schema:
                 $ref: "#/components/schemas/EventoResponse"
   /eventos:
+    get:
+      tags:
+      - Eventos
+      summary: "Eventos de un organizador (\"Mis eventos\")"
+      description: "Todos los eventos del organizador en cualquier estado (borrador,\
+        \ publicado, en curso, finalizado o cancelado), del más próximo al más lejano.\
+        \ Sin autenticación (sesión simulada), cualquiera que conozca el `organizadorId`\
+        \ puede consultarlos."
+      operationId: delOrganizador
+      parameters:
+      - name: organizadorId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Lista de eventos (vacía si no ha creado ninguno)
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventoResponse"
+        "400":
+          description: Falta el organizadorId o no es un UUID
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventoResponse"
     post:
       tags:
       - Eventos

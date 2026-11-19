@@ -159,4 +159,25 @@ class EventoControllerTest {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].nombre").value("Visible"));
     }
+
+    @Test
+    void misEventosDevuelveLosDelOrganizadorEnCualquierEstado() throws Exception {
+        var organizadorId = UUID.randomUUID();
+        repositorio.guardar(Evento.reconstruir(UUID.randomUUID(), "Mi borrador", "Movistar Arena",
+                Instant.now().plus(30, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS), 1000,
+                organizadorId, "org@correo.com", EstadoEvento.BORRADOR,
+                List.of(new CategoriaBoleta(TipoBoleta.GENERAL, 1000, 50_000))));
+        guardarEnEstado("De otro organizador", EstadoEvento.PUBLICADO);
+
+        mockMvc.perform(get("/eventos").param("organizadorId", organizadorId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].nombre").value("Mi borrador"))
+                .andExpect(jsonPath("$[0].estado").value("BORRADOR"));
+    }
+
+    @Test
+    void misEventosSinOrganizadorDevuelve400() throws Exception {
+        mockMvc.perform(get("/eventos")).andExpect(status().isBadRequest());
+    }
 }

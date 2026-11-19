@@ -12,4 +12,7 @@ public interface EventoRepository {
     Optional<Evento> buscarPorId(UUID id);
     /** Eventos PUBLICADOS cuya fecha de inicio es posterior a "ahora" (RF-06). */
     List<Evento> buscarPublicadosDesde(Instant ahora);
+
+    /** Todos los eventos de un organizador, en cualquier estado, del más próximo al más lejano. */
+    List<Evento> buscarPorOrganizador(UUID organizadorId);
 }

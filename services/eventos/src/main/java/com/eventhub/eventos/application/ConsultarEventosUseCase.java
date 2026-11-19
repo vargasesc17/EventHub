@@ -19,6 +19,14 @@ public class ConsultarEventosUseCase {
                 .orElseThrow(() -> new EventoNoEncontradoException(id));
     }
 
+    /** "Mis eventos" del organizador: incluye borradores, cancelados y finalizados. */
+    public List<Evento> delOrganizador(UUID organizadorId) {
+        if (organizadorId == null) {
+            throw new IllegalArgumentException("La consulta exige el id del organizador");
+        }
+        return repositorio.buscarPorOrganizador(organizadorId);
+    }
+
     public List<Evento> catalogo() {
         return repositorio.buscarPublicadosDesde(Instant.now());
     }

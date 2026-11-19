@@ -4,8 +4,7 @@ import { Link } from "react-router-dom";
 import Pagina from "../../components/Pagina";
 import EstadoCarga from "../../components/EstadoCarga";
 
-import { obtenerEvento, cambiarEstado } from "../../api/eventos";
-import { obtenerMisEventos, olvidarMisEventos } from "../../storage/misEventos";
+import { obtenerEventosDelOrganizador, cambiarEstado } from "../../api/eventos";
 import { useSesion } from "../../sesion/Sesion";
 
 const acciones = {
@@ -57,43 +56,12 @@ export default function GestionEventos() {
 
     async function cargar() {
       try {
-        const ids = obtenerMisEventos(usuario.id);
-        const resultados = await Promise.allSettled(ids.map(obtenerEvento));
+        // "Mis eventos" sale de Eventos (GET /eventos?organizadorId=), en cualquier estado.
+        const resultado = await obtenerEventosDelOrganizador(usuario.id);
 
         if (!activo) return;
 
-        setEventos(
-          resultados
-            .filter(
-              (r) =>
-                r.status === "fulfilled" &&
-                r.value.organizadorId === usuario.id
-            )
-            .map((r) => r.value)
-        );
-
-        // Un 404 significa que el evento ya no existe (por ejemplo, se borró la base de datos):
-        // se olvida su id. Cualquier otra falla (Eventos caído, red) sí se muestra.
-
-        const inexistentes = ids.filter(
-          (_, i) =>
-            resultados[i].status === "rejected" &&
-            resultados[i].reason?.status === 404
-        );
-        if (inexistentes.length) {
-          olvidarMisEventos(usuario.id, inexistentes);
-        }
-
-        if (
-          resultados.some(
-            (r) => r.status === "rejected" && r.reason?.status !== 404
-          )
-        ) {
-          setError({
-            detail:
-              "Algunos eventos no pudieron consultarse. Sus identificadores siguen guardados.",
-          });
-        }
+        setEventos(resultado);
       } catch (e) {
         if (activo) setError(e);
       } finally {
@@ -172,7 +140,7 @@ export default function GestionEventos() {
 
       {!cargando && !error && !eventos.length && (
         <p className="font-inter-semibold">
-          No tienes eventos guardados en este navegador.
+          Todavía no has creado eventos.
         </p>
       )}
 
