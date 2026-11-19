@@ -21,3 +21,8 @@ management:
   endpoint:
     health:
       show-details: always
+
+springdoc:
+  swagger-ui:
+    operations-sorter: method
+    tags-sorter: alpha
