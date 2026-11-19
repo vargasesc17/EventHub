@@ -9,4 +9,6 @@ import java.util.UUID;
 
 public interface EventoJpaRepository extends JpaRepository<EventoEntity, UUID> {
     List<EventoEntity> findByEstadoAndFechaInicioAfter(EstadoEvento estado, Instant fecha);
+
+    List<EventoEntity> findByOrganizadorIdOrderByFechaInicioAsc(UUID organizadorId);
 }

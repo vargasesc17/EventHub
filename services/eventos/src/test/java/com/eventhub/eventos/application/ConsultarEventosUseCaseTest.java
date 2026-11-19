@@ -21,8 +21,12 @@ class ConsultarEventosUseCaseTest {
     private final Instant pasado = Instant.now().minus(1, ChronoUnit.DAYS);
 
     private Evento guardar(String nombre, EstadoEvento estado, Instant fecha) {
+        return guardar(nombre, estado, fecha, UUID.randomUUID());
+    }
+
+    private Evento guardar(String nombre, EstadoEvento estado, Instant fecha, UUID organizadorId) {
         var evento = Evento.reconstruir(UUID.randomUUID(), nombre, "Movistar Arena", fecha, 1000,
-                UUID.randomUUID(), "org@correo.com", estado,
+                organizadorId, "org@correo.com", estado,
                 List.of(new CategoriaBoleta(TipoBoleta.GENERAL, 1000, 50_000)));
         repositorio.guardar(evento);
         return evento;
@@ -52,5 +56,23 @@ class ConsultarEventosUseCaseTest {
 
         assertEquals(1, catalogo.size());
         assertEquals("Visible", catalogo.get(0).getNombre());
+    }
+
+    @Test
+    void delOrganizadorIncluyeTodosSusEstadosYNoLosDeOtros() {
+        var organizadorId = UUID.randomUUID();
+        guardar("Lejano", EstadoEvento.CANCELADO, futuro.plus(10, ChronoUnit.DAYS), organizadorId);
+        guardar("Borrador", EstadoEvento.BORRADOR, futuro, organizadorId);
+        guardar("Ya pasó", EstadoEvento.FINALIZADO, pasado, organizadorId);
+        guardar("De otro", EstadoEvento.PUBLICADO, futuro);
+
+        var nombres = casoDeUso.delOrganizador(organizadorId).stream().map(Evento::getNombre).toList();
+
+        assertEquals(List.of("Ya pasó", "Borrador", "Lejano"), nombres);
+    }
+
+    @Test
+    void delOrganizadorSinIdLanzaError() {
+        assertThrows(IllegalArgumentException.class, () -> casoDeUso.delOrganizador(null));
     }
 }

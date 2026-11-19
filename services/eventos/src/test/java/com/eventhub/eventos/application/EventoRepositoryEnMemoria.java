@@ -32,6 +32,14 @@ class EventoRepositoryEnMemoria implements EventoRepository {
                 .toList();
     }
 
+    @Override
+    public List<Evento> buscarPorOrganizador(UUID organizadorId) {
+        return eventos.values().stream()
+                .filter(e -> e.getOrganizadorId().equals(organizadorId))
+                .sorted(java.util.Comparator.comparing(Evento::getFechaInicio))
+                .toList();
+    }
+
     int cantidad() {
         return eventos.size();
     }

@@ -100,4 +100,24 @@ class JpaEventoRepositoryTest {
         assertEquals(1, catalogo.size());
         assertEquals("Visible", catalogo.get(0).getNombre());
     }
+
+    @Test
+    void buscaLosEventosDeUnOrganizadorOrdenadosPorFecha() {
+        var organizadorId = UUID.randomUUID();
+        var lejano = Evento.reconstruir(UUID.randomUUID(), "Lejano", "Movistar Arena", futuro.plus(5, ChronoUnit.DAYS),
+                1000, organizadorId, "org@correo.com", EstadoEvento.BORRADOR,
+                List.of(new CategoriaBoleta(TipoBoleta.GENERAL, 1000, 50_000)));
+        var proximo = Evento.reconstruir(UUID.randomUUID(), "Próximo", "Movistar Arena", futuro,
+                1000, organizadorId, "org@correo.com", EstadoEvento.CANCELADO,
+                List.of(new CategoriaBoleta(TipoBoleta.GENERAL, 1000, 50_000)));
+        repositorio.guardar(lejano);
+        repositorio.guardar(proximo);
+        repositorio.guardar(evento("De otro", EstadoEvento.PUBLICADO, futuro));
+        sincronizar();
+
+        var encontrados = repositorio.buscarPorOrganizador(organizadorId);
+
+        assertEquals(List.of("Próximo", "Lejano"), encontrados.stream().map(Evento::getNombre).toList());
+        assertTrue(repositorio.buscarPorOrganizador(UUID.randomUUID()).isEmpty());
+    }
 }

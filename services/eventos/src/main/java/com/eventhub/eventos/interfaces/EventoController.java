@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
@@ -45,6 +46,17 @@ public class EventoController {
         var evento = gestionar.crear(request.aCommand());
         return ResponseEntity.created(URI.create("/eventos/" + evento.getId()))
                 .body(EventoResponse.desde(evento));
+    }
+
+    @Operation(summary = "Eventos de un organizador (\"Mis eventos\")",
+            description = "Todos los eventos del organizador en cualquier estado (borrador, publicado, en curso, "
+                    + "finalizado o cancelado), del más próximo al más lejano. Sin autenticación (sesión simulada), "
+                    + "cualquiera que conozca el `organizadorId` puede consultarlos.")
+    @ApiResponse(responseCode = "200", description = "Lista de eventos (vacía si no ha creado ninguno)")
+    @ApiResponse(responseCode = "400", description = "Falta el organizadorId o no es un UUID")
+    @GetMapping
+    public List<EventoResponse> delOrganizador(@RequestParam UUID organizadorId) {
+        return consultar.delOrganizador(organizadorId).stream().map(EventoResponse::desde).toList();
     }
 
     @Operation(summary = "Consultar un evento por id")

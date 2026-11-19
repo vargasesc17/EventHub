@@ -35,4 +35,11 @@ public class JpaEventoRepository implements EventoRepository {
                 .map(EventoMapper::aDominio)
                 .toList();
     }
+
+    @Override
+    public List<Evento> buscarPorOrganizador(UUID organizadorId) {
+        return jpa.findByOrganizadorIdOrderByFechaInicioAsc(organizadorId).stream()
+                .map(EventoMapper::aDominio)
+                .toList();
+    }
 }

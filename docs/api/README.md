@@ -95,6 +95,13 @@ Eventos `PUBLICADO` con fecha futura (RF-06). Funciona aunque Notificaciones est
 
 **200** con un evento (misma forma que cada elemento del catálogo) · **404**
 
+### `GET /api/eventos?organizadorId={id}` · Mis eventos (organizador)
+
+Todos los eventos del organizador, en **cualquier estado** (borrador, publicado, en curso, finalizado o cancelado), del más próximo al más lejano. Cada elemento tiene la misma forma que `GET /api/eventos/{id}`.
+
+- Lista vacía si no ha creado eventos. **400** si falta `organizadorId`.
+- Sin autenticación (sesión simulada), cualquiera que conozca el `organizadorId` puede consultarlos. Con JWT, el id saldría del token.
+
 ### `POST /api/eventos` · Crear un evento (organizador)
 
 Queda en `BORRADOR`. La suma de cupos de las categorías no puede superar el aforo.
@@ -283,13 +290,13 @@ Una boleta de otro evento **no se marca como usada**: sigue sirviendo en la entr
 | Detalle y compra | `GET /api/eventos/{id}`, `GET /api/boleteria/eventos/{id}/aforo`, `POST /api/boleteria/boletas` |
 | Mis boletas y mi boleta con QR | `GET /api/boleteria/boletas?compradorId={id}` |
 | Organizador: crear y editar | `POST /api/eventos`, `PUT /api/eventos/{id}` |
+| Organizador: mis eventos | `GET /api/eventos?organizadorId={id}` |
 | Organizador: publicar, cancelar, reprogramar | `POST /api/eventos/{id}/publicar`, `/cancelar`, `PATCH /api/eventos/{id}` |
 | Organizador: aforo | `GET /api/boleteria/eventos/{id}/aforo` |
 | Check-in | `GET /api/eventos/{id}`, `POST /api/boleteria/checkin` |
 
 ## Lo que todavía no existe
 
-- **"Mis eventos" del organizador**: el catálogo solo trae los publicados; no hay forma de listar los borradores. Por ahora, guardar el `id` que devuelve `POST /api/eventos`.
 - **Notificaciones**: no tiene API; los correos se ven en Mailpit (http://localhost:8025).
 - **Reservas**: no están implementadas.
 
