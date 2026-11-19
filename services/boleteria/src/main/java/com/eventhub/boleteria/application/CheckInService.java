@@ -7,5 +7,9 @@ import java.util.UUID;
  * (ISP): quien hace check-in no ve los métodos de comprar, y quien compra no ve los de check-in.
  */
 public interface CheckInService {
-    ResultadoCheckIn validar(String codigoQr, UUID staffId);
+    /**
+     * @param eventoId el evento en cuya entrada está el staff: una boleta de otro evento no entra,
+     *                 aunque su QR sea auténtico y esté ACTIVA.
+     */
+    ResultadoCheckIn validar(String codigoQr, UUID eventoId, UUID staffId);
 }
