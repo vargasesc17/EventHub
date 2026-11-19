@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface BoletaJpaRepository extends JpaRepository<BoletaEntity, UUID> {
@@ -20,4 +21,11 @@ public interface BoletaJpaRepository extends JpaRepository<BoletaEntity, UUID> {
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update BoletaEntity b set b.estado = :nuevo where b.id = :id and b.estado = :actual")
     int cambiarEstadoSi(@Param("id") UUID id, @Param("actual") EstadoBoleta actual, @Param("nuevo") EstadoBoleta nuevo);
+
+    @Transactional
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update BoletaEntity b set b.estado = :nuevo where b.eventoId = :eventoId and b.estado in :actuales")
+    int cambiarEstadoPorEvento(@Param("eventoId") UUID eventoId,
+                               @Param("actuales") List<EstadoBoleta> actuales,
+                               @Param("nuevo") EstadoBoleta nuevo);
 }

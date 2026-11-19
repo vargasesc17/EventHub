@@ -17,4 +17,10 @@ public interface BoletaRepository {
      * escanean la misma boleta al mismo tiempo, solo una lo logra.
      */
     boolean marcarUsadaSiActiva(UUID boletaId);
+
+    /**
+     * Cuando el evento se cancela: pasa a CANCELADA todas sus boletas ACTIVA o RESERVADA,
+     * con una sola actualización. Las USADA no se tocan. Devuelve cuántas cambió.
+     */
+    int cancelarPorEvento(UUID eventoId);
 }

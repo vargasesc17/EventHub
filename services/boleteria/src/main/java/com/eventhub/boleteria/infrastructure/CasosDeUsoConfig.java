@@ -17,8 +17,9 @@ public class CasosDeUsoConfig {
 
     @Bean
     SincronizarEventoUseCase sincronizarEventoUseCase(MensajeProcesadoRepository mensajes, AforoRepository aforos,
-                                                      InventarioRepository inventarios, Clock reloj) {
-        return new SincronizarEventoUseCase(mensajes, aforos, inventarios, reloj);
+                                                      InventarioRepository inventarios, BoletaRepository boletas,
+                                                      Clock reloj) {
+        return new SincronizarEventoUseCase(mensajes, aforos, inventarios, boletas, reloj);
     }
 
     @Bean

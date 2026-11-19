@@ -1,5 +1,7 @@
 package com.eventhub.boleteria.application;
 
+import com.eventhub.boleteria.domain.BoletaGeneral;
+import com.eventhub.boleteria.domain.EstadoBoleta;
 import com.eventhub.boleteria.domain.TipoBoleta;
 import org.junit.jupiter.api.Test;
 
@@ -17,10 +19,10 @@ class SincronizarEventoUseCaseTest {
     private final MensajesEnMemoria mensajes = new MensajesEnMemoria();
     private final AforosEnMemoria aforos = new AforosEnMemoria();
     private final InventariosEnMemoria inventarios = new InventariosEnMemoria();
+    private final BoletasEnMemoria boletas = new BoletasEnMemoria();
 
     private final SincronizarEventoUseCase casoDeUso = new SincronizarEventoUseCase(mensajes, aforos,
-            inventarios, Clock.fixed(Instant.parse("2030-01-01T00:00:00Z"), ZoneOffset.UTC));
-    private final UUID eventoId = UUID.randomUUID();
+            inventarios, boletas, Clock.fixed(Instant.parse("2030-01-01T00:00:00Z"), ZoneOffset.UTC));  private final UUID eventoId = UUID.randomUUID();
     private final Instant fecha = Instant.parse("2030-06-01T20:00:00Z");
 
     private EventoActualizadoComando comando(Set<TipoCambio> cambios, Instant fechaInicio, String lugar) {
@@ -116,5 +118,20 @@ class SincronizarEventoUseCaseTest {
 
         assertEquals(Resultado.IGNORADO, casoDeUso.ejecutar(mensaje));
         assertEquals(Resultado.DUPLICADO, casoDeUso.ejecutar(mensaje));
+    }
+
+    @Test
+    void canceladoCancelaLasBoletasVendidasDelEvento() {
+        casoDeUso.ejecutar(publicado());
+        var deEsteEvento = new BoletaGeneral(UUID.randomUUID(), eventoId, UUID.randomUUID(), 50_000,
+                EstadoBoleta.ACTIVA, Instant.now());
+        var deOtroEvento = new BoletaGeneral(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 50_000,
+                EstadoBoleta.ACTIVA, Instant.now());
+        boletas.guardar(deEsteEvento);
+        boletas.guardar(deOtroEvento);
+
+        casoDeUso.ejecutar(comando(Set.of(TipoCambio.CANCELADO), fecha, "Movistar Arena"));
+
+        assertEquals(Set.of(deEsteEvento.getId()), boletas.canceladas());
     }
 }
