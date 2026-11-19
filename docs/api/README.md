@@ -193,6 +193,33 @@ import { QRCodeSVG } from "qrcode.react";
 
 Ese mismo texto es el que se escanea en el check-in. Además, el comprador recibe el QR por correo (Mailpit en http://localhost:8025).
 
+### `GET /api/boleteria/boletas?compradorId={id}` · Mis boletas
+
+Las boletas de un comprador, de la compra más reciente a la más antigua. Trae el nombre, la fecha y el lugar del evento, así que no hace falta consultar a Eventos.
+
+**200**
+```json
+[
+  {
+    "boletaId": "5d8e1f20-3a4b-4c6d-8e9f-0a1b2c3d4e5f",
+    "eventoId": "3c1f9d2e-8a4b-4f6c-9e1d-2b7a5c8e0f13",
+    "nombreEvento": "Concierto de fin de semestre",
+    "fechaEvento": "2027-06-01T20:00:00Z",
+    "lugar": "Movistar Arena",
+    "categoria": "VIP",
+    "precioPagado": 250000,
+    "estado": "ACTIVA",
+    "fechaCompra": "2026-11-18T15:30:00Z",
+    "codigoQr": "5d8e1f20-3a4b-4c6d-8e9f-0a1b2c3d4e5f.Qm9sZXRhRmlybWFkYUNvbkhNQUM"
+  }
+]
+```
+
+- `estado` es el real: si el evento se canceló, llega `CANCELADA`; si ya entró, `USADA`.
+- `codigoQr` solo viene cuando la boleta está `ACTIVA` (en las demás llega `null`, porque ya no sirve para entrar).
+- Lista vacía si la persona no ha comprado. **400** si falta `compradorId`.
+- Como no hay autenticación (sesión simulada), cualquiera que conozca el `compradorId` puede consultarlas. Con JWT, el id saldría del token.
+
 ### `GET /api/boleteria/eventos/{eventoId}/aforo` · Aforo del evento (organizador)
 
 Vendidas frente al aforo, por categoría (RF-05).
@@ -254,7 +281,7 @@ Una boleta de otro evento **no se marca como usada**: sigue sirviendo en la entr
 |---|---|
 | Inicio / catálogo | `GET /api/eventos/catalogo` |
 | Detalle y compra | `GET /api/eventos/{id}`, `GET /api/boleteria/eventos/{id}/aforo`, `POST /api/boleteria/boletas` |
-| Mi boleta con QR | La respuesta de la compra (ver "Lo que todavía no existe") |
+| Mis boletas y mi boleta con QR | `GET /api/boleteria/boletas?compradorId={id}` |
 | Organizador: crear y editar | `POST /api/eventos`, `PUT /api/eventos/{id}` |
 | Organizador: publicar, cancelar, reprogramar | `POST /api/eventos/{id}/publicar`, `/cancelar`, `PATCH /api/eventos/{id}` |
 | Organizador: aforo | `GET /api/boleteria/eventos/{id}/aforo` |
@@ -262,7 +289,6 @@ Una boleta de otro evento **no se marca como usada**: sigue sirviendo en la entr
 
 ## Lo que todavía no existe
 
-- **"Mis boletas"**: no hay endpoint para listar las boletas de un comprador. Por ahora, guardar en el navegador la respuesta de cada compra.
 - **"Mis eventos" del organizador**: el catálogo solo trae los publicados; no hay forma de listar los borradores. Por ahora, guardar el `id` que devuelve `POST /api/eventos`.
 - **Notificaciones**: no tiene API; los correos se ven en Mailpit (http://localhost:8025).
 - **Reservas**: no están implementadas.

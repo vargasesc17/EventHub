@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
 
 import Pagina from "../../components/Pagina";
+import EstadoCarga from "../../components/EstadoCarga";
 import { useSesion } from "../../sesion/Sesion";
-import { obtenerMisBoletas } from "../../storage/misBoletas";
-import { useEffect, useState } from "react";
-import { obtenerEvento } from "../../api/eventos";
+import { obtenerBoletasDelComprador } from "../../api/boleteria";
+import useConsulta from "../../api/useConsulta";
 
 // ESTILO GENERAL DE LOS BOTONES
 
@@ -38,57 +38,27 @@ export default function Boletas() {
 
   const { usuario } = useSesion();
 
-  let boletas = [];
-  let error;
+  // CONSULTAR LAS BOLETAS DEL COMPRADOR A BOLETERÍA
+  // El estado es el real: si el evento se canceló, la boleta ya llega CANCELADA.
 
-  // CONSULTAR LAS BOLETAS DEL COMPRADOR
+  const { datos, cargando, error } = useConsulta(
+    obtenerBoletasDelComprador,
+    usuario.id
+  );
 
-  try {
-
-    boletas = obtenerMisBoletas(usuario.id);
-
-  } catch (e) {
-
-    error = e.message;
-
-  }
-  // ESTADO ACTUAL DE CADA EVENTO
-  // "Mis boletas" es una copia guardada al comprar: el estado del evento se consulta a la API
-  // para saber si se canceló después.
-
-  const [estadoEvento, setEstadoEvento] = useState({});
-
-  useEffect(() => {
-    const ids = [...new Set(boletas.map((b) => b.eventoId))];
-    Promise.all(
-        ids.map((id) =>
-            obtenerEvento(id).then((e) => [id, e.estado]).catch(() => [id, null])
-        )
-    ).then((pares) => setEstadoEvento(Object.fromEntries(pares)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usuario.id]);
+  const boletas = datos || [];
 
   return (
 
     <Pagina titulo="Mis boletas">
 
-      {/* MENSAJE DE ERROR */}
+      {/* CARGANDO O ERROR */}
 
-      {error && (
-
-        <p
-          role="alert"
-          className="rounded-[25px] bg-red-100 p-5
-          font-inter-semibold text-red-700"
-        >
-          {error}
-        </p>
-
-      )}
+      <EstadoCarga cargando={cargando} error={error} />
 
       {/* CUANDO NO HAY BOLETAS */}
 
-      {!error && !boletas.length && (
+      {!cargando && !error && !boletas.length && (
 
         <section className="eh-panel rounded-[40px]!
           mx-auto max-w-[650px] p-10!
@@ -127,7 +97,7 @@ export default function Boletas() {
           <p className="font-inter-semibold
             text-[17px] text-[#69529b]">
 
-            No tienes compras guardadas en este navegador.
+            Todavía no has comprado boletas.
             Explora los eventos disponibles y encuentra
             tu próximo evento.
 
@@ -186,11 +156,12 @@ export default function Boletas() {
 
         {boletas.map((boleta) => {
 
-          const id = boleta.boletaId || boleta.id;
+          const id = boleta.boletaId;
 
           const nombreEvento =
             boleta.nombreEvento || "Boleta de evento";
-          const cancelada = estadoEvento[boleta.eventoId] === "CANCELADO";
+          const cancelada = boleta.estado === "CANCELADA";
+          const usada = boleta.estado === "USADA";
 
           return (
 
@@ -206,7 +177,7 @@ export default function Boletas() {
 
               <header
                   className={`${
-                      cancelada
+                      cancelada || usada
                           ? "bg-gray-400"
                           : coloresCategorias[boleta.categoria] || "bg-[#260477]"
                   } p-6 text-white`}
@@ -284,7 +255,7 @@ export default function Boletas() {
                   <p className="font-inter-bold
                     text-[18px] text-[#0f0140]">
 
-                    {cancelada ? "CANCELADA (evento cancelado)" : boleta.estado || "No disponible"}
+                    {cancelada ? "CANCELADA" : boleta.estado || "No disponible"}
 
                   </p>
 
@@ -359,7 +330,9 @@ export default function Boletas() {
                   text-[13px] text-[#69529b]">
 
                   {cancelada
-                      ? "El evento fue cancelado: esta boleta ya no sirve para ingresar"
+                      ? "Esta boleta fue cancelada: ya no sirve para ingresar"
+                      : usada
+                      ? "Esta boleta ya se usó para ingresar al evento"
                       : boleta.codigoQr
                           ? "Consulta los detalles y tu código QR"
                           : "Consulta los detalles de tu boleta"}

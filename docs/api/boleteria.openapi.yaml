@@ -13,7 +13,7 @@ tags:
 - name: Check-in
   description: Validación del QR en la entrada (staff)
 - name: Boletas
-  description: Compra de boletas y consulta de aforo
+  description: "Compra de boletas, boletas del comprador y consulta de aforo"
 paths:
   /checkin:
     post:
@@ -52,6 +52,40 @@ paths:
               schema:
                 $ref: "#/components/schemas/ResultadoCheckIn"
   /boletas:
+    get:
+      tags:
+      - Boletas
+      summary: "Boletas de un comprador (\"Mis boletas\")"
+      description: |-
+        De la compra más reciente a la más antigua, con el nombre, la fecha y el lugar del evento
+        (copia local de Boletería, sin consultar a Eventos). El estado es el real: si el evento se
+        canceló, la boleta llega CANCELADA. `codigoQr` solo viene en las boletas ACTIVA.
+        Sin autenticación (sesión simulada), cualquiera que conozca el `compradorId` puede consultarlas.
+      operationId: boletasDelComprador
+      parameters:
+      - name: compradorId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Lista de boletas (vacía si no ha comprado)
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BoletaDelCompradorResponse"
+        "400":
+          description: Falta el compradorId o no es un UUID
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BoletaDelCompradorResponse"
     post:
       tags:
       - Boletas
@@ -212,6 +246,44 @@ components:
         eventoId:
           type: string
           format: uuid
+        categoria:
+          type: string
+          enum:
+          - GENERAL
+          - VIP
+          - ESTUDIANTE
+          - CORTESIA
+        precioPagado:
+          type: integer
+          format: int64
+        estado:
+          type: string
+          enum:
+          - RESERVADA
+          - ACTIVA
+          - USADA
+          - CANCELADA
+        fechaCompra:
+          type: string
+          format: date-time
+        codigoQr:
+          type: string
+    BoletaDelCompradorResponse:
+      type: object
+      properties:
+        boletaId:
+          type: string
+          format: uuid
+        eventoId:
+          type: string
+          format: uuid
+        nombreEvento:
+          type: string
+        fechaEvento:
+          type: string
+          format: date-time
+        lugar:
+          type: string
         categoria:
           type: string
           enum:

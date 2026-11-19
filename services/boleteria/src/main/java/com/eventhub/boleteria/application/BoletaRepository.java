@@ -2,6 +2,7 @@ package com.eventhub.boleteria.application;
 
 import com.eventhub.boleteria.domain.Boleta;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,6 +11,9 @@ public interface BoletaRepository {
     void guardar(Boleta boleta);
 
     Optional<Boleta> buscar(UUID boletaId);
+
+    /** Las boletas de un comprador, de la compra más reciente a la más antigua ("Mis boletas"). */
+    List<Boleta> buscarPorComprador(UUID compradorId);
 
     /**
      * Segundo paso del check-in (ADR-0004): pasa la boleta de ACTIVA a USADA con UNA actualización

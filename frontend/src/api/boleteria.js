@@ -24,3 +24,11 @@ export const registrarCheckIn = datos =>
     method: "POST",
     body: JSON.stringify(datos),
   });
+
+// BOLETAS DEL COMPRADOR ("MIS BOLETAS")
+
+export const obtenerBoletasDelComprador = compradorId =>
+  solicitar(
+    "/api/boleteria/boletas?compradorId=" +
+    encodeURIComponent(compradorId)
+  );
