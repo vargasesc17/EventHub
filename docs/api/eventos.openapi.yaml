@@ -1,0 +1,450 @@
+openapi: 3.1.0
+info:
+  title: EventHub · Servicio de Eventos
+  description: |-
+    Creación y ciclo de vida de los eventos (BORRADOR → PUBLICADO → EN_CURSO → FINALIZADO,
+    o CANCELADO). Cada cambio relevante publica `evento.actualizado` en RabbitMQ.
+    Errores en formato ProblemDetail (RFC 9457): 400 campos inválidos, 404 no existe,
+    422 regla de negocio violada.
+  version: "1.0"
+servers:
+- url: http://localhost:8081
+  description: Generated server url
+tags:
+- name: Eventos
+  description: "Creación, edición y ciclo de vida de los eventos"
+paths:
+  /eventos/{id}:
+    get:
+      tags:
+      - Eventos
+      summary: Consultar un evento por id
+      operationId: consultar
+      parameters:
+      - name: id
+        in: path
+        description: Id del evento
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: El evento
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "404":
+          description: No existe un evento con ese id
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+    put:
+      tags:
+      - Eventos
+      summary: Editar un evento
+      description: Solo se puede editar mientras está en BORRADOR.
+      operationId: editar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditarEventoRequest"
+        required: true
+      responses:
+        "200":
+          description: Evento editado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "400":
+          description: Campos inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "404":
+          description: No existe el evento
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "422":
+          description: El evento ya no está en BORRADOR
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+    patch:
+      tags:
+      - Eventos
+      summary: Reprogramar fecha o lugar
+      description: Cambia la fecha y/o el lugar de un evento publicado. Publica `evento.actualizado`
+        para que Boletería y Notificaciones se enteren.
+      operationId: reprogramar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReprogramarEventoRequest"
+        required: true
+      responses:
+        "200":
+          description: Evento reprogramado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "404":
+          description: No existe el evento
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "422":
+          description: Fecha pasada o estado que no permite reprogramar
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+  /eventos:
+    post:
+      tags:
+      - Eventos
+      summary: Crear un evento
+      description: El evento nace en BORRADOR. Debe tener al menos una categoría de
+        boleta; la cortesía tiene precio 0.
+      operationId: crear
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrearEventoRequest"
+        required: true
+      responses:
+        "201":
+          description: Evento creado en BORRADOR
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "400":
+          description: Campos obligatorios vacíos o inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "422":
+          description: "Regla de negocio violada (fecha pasada, cupos o precio invá\
+            lidos...)"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+  /eventos/{id}/publicar:
+    post:
+      tags:
+      - Eventos
+      summary: Publicar un evento
+      description: "BORRADOR → PUBLICADO. Publica `evento.actualizado`: Boletería\
+        \ crea el inventario y empieza a vender."
+      operationId: publicar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Evento publicado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "404":
+          description: No existe el evento
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "422":
+          description: Transición no permitida desde el estado actual
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+  /eventos/{id}/iniciar:
+    post:
+      tags:
+      - Eventos
+      summary: Iniciar un evento
+      description: PUBLICADO → EN_CURSO.
+      operationId: iniciar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Evento en curso
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "404":
+          description: No existe el evento
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "422":
+          description: Transición no permitida desde el estado actual
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+  /eventos/{id}/finalizar:
+    post:
+      tags:
+      - Eventos
+      summary: Finalizar un evento
+      description: EN_CURSO → FINALIZADO.
+      operationId: finalizar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Evento finalizado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "404":
+          description: No existe el evento
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "422":
+          description: Transición no permitida desde el estado actual
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+  /eventos/{id}/cancelar:
+    post:
+      tags:
+      - Eventos
+      summary: Cancelar un evento
+      description: "Pasa a CANCELADO. Publica `evento.actualizado`: Boletería bloquea\
+        \ las ventas y cancela las boletas vendidas; Notificaciones avisa a los compradores."
+      operationId: cancelar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Evento cancelado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "404":
+          description: No existe el evento
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+        "422":
+          description: El evento ya terminó o ya estaba cancelado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventoResponse"
+  /eventos/catalogo:
+    get:
+      tags:
+      - Eventos
+      summary: Catálogo
+      description: Eventos que el comprador puede ver (publicados y en curso).
+      operationId: catalogo
+      responses:
+        "200":
+          description: Lista de eventos
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventoResponse"
+components:
+  schemas:
+    CategoriaRequest:
+      type: object
+      properties:
+        tipo:
+          type: string
+          enum:
+          - GENERAL
+          - VIP
+          - ESTUDIANTE
+          - CORTESIA
+        cupos:
+          type: integer
+          format: int32
+          exclusiveMinimum: 0
+        precioBase:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - tipo
+    EditarEventoRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        lugar:
+          type: string
+          minLength: 1
+        fechaInicio:
+          type: string
+          format: date-time
+        aforoMaximo:
+          type: integer
+          format: int32
+          exclusiveMinimum: 0
+        categorias:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoriaRequest"
+          minItems: 1
+      required:
+      - categorias
+      - fechaInicio
+      - lugar
+      - nombre
+    CategoriaResponse:
+      type: object
+      properties:
+        tipo:
+          type: string
+          enum:
+          - GENERAL
+          - VIP
+          - ESTUDIANTE
+          - CORTESIA
+        cupos:
+          type: integer
+          format: int32
+        precioBase:
+          type: integer
+          format: int64
+    EventoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        lugar:
+          type: string
+        fechaInicio:
+          type: string
+          format: date-time
+        aforoMaximo:
+          type: integer
+          format: int32
+        organizadorId:
+          type: string
+          format: uuid
+        organizadorCorreo:
+          type: string
+        estado:
+          type: string
+          enum:
+          - BORRADOR
+          - PUBLICADO
+          - EN_CURSO
+          - FINALIZADO
+          - CANCELADO
+        categorias:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoriaResponse"
+    CrearEventoRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        lugar:
+          type: string
+          minLength: 1
+        fechaInicio:
+          type: string
+          format: date-time
+        aforoMaximo:
+          type: integer
+          format: int32
+          exclusiveMinimum: 0
+        organizadorId:
+          type: string
+          format: uuid
+        organizadorCorreo:
+          type: string
+          format: email
+          minLength: 1
+        categorias:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoriaRequest"
+          minItems: 1
+      required:
+      - categorias
+      - fechaInicio
+      - lugar
+      - nombre
+      - organizadorCorreo
+      - organizadorId
+    ReprogramarEventoRequest:
+      type: object
+      properties:
+        fechaInicio:
+          type: string
+          format: date-time
+        lugar:
+          type: string

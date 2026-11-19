@@ -1,0 +1,284 @@
+openapi: 3.1.0
+info:
+  title: EventHub · Servicio de Boletería
+  description: |-
+    Compra de boletas (Factory Method por tipo, Strategy por precio), consulta de aforo
+    y check-in con QR firmado (HMAC-SHA256, ADR-0004). El cupo se descuenta con un
+    UPDATE atómico (ADR-0003). Errores en formato ProblemDetail (RFC 9457).
+  version: "1.0"
+servers:
+- url: http://localhost:8082
+  description: Generated server url
+tags:
+- name: Check-in
+  description: Validación del QR en la entrada (staff)
+- name: Boletas
+  description: Compra de boletas y consulta de aforo
+paths:
+  /checkin:
+    post:
+      tags:
+      - Check-in
+      summary: Validar el QR de una boleta
+      description: |-
+        El código tiene la forma `boletaId.firma` (HMAC-SHA256, ADR-0004). Si la firma es válida y la
+        boleta está ACTIVA, se marca USADA de forma atómica: el mismo QR no entra dos veces.
+        Siempre responde con el motivo.
+      operationId: validar
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckInRequest"
+        required: true
+      responses:
+        "200":
+          description: "Aceptado: la persona entra"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultadoCheckIn"
+        "409":
+          description: "Rechazado: QR alterado, boleta ya usada o cancelada"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultadoCheckIn"
+        "400":
+          description: Falta el código o el staffId
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultadoCheckIn"
+  /boletas:
+    post:
+      tags:
+      - Boletas
+      summary: Comprar una boleta
+      description: |-
+        La fábrica del tipo (Factory Method) arma la boleta y la estrategia de la categoría (Strategy)
+        calcula el precio. El cupo se descuenta con un UPDATE atómico, así que nunca se vende de más.
+        ESTUDIANTE exige `carnetEstudiantil`; CORTESIA exige `emitidaPor` y no se cobra.
+        Al terminar se publica `boleta.comprada` (correo con QR) y, si se cruza el 90 %, `evento.aforo.critico`.
+      operationId: comprar
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompraRequest"
+        required: true
+      responses:
+        "201":
+          description: Boleta comprada; incluye el código QR firmado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CompraResponse"
+        "400":
+          description: Campos inválidos o JSON mal formado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CompraResponse"
+        "402":
+          description: La pasarela rechazó el pago
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CompraResponse"
+        "404":
+          description: Boletería no conoce el evento
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CompraResponse"
+        "409":
+          description: No quedan cupos en esa categoría
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CompraResponse"
+        "422":
+          description: "Evento no a la venta, categoría no vendida, falta carnet o\
+            \ emisor..."
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CompraResponse"
+  /eventos/{eventoId}/aforo:
+    get:
+      tags:
+      - Boletas
+      summary: Consultar el aforo de un evento
+      description: "Cupos, disponibles y vendidas por categoría, con su precio base\
+        \ y tipo de precio."
+      operationId: aforo
+      parameters:
+      - name: eventoId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Aforo por categoría
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AforoResponse"
+        "404":
+          description: Boletería no conoce el evento
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AforoResponse"
+components:
+  schemas:
+    CheckInRequest:
+      type: object
+      properties:
+        codigoQr:
+          type: string
+          minLength: 1
+        staffId:
+          type: string
+          format: uuid
+      required:
+      - codigoQr
+      - staffId
+    ResultadoCheckIn:
+      type: object
+      properties:
+        aceptado:
+          type: boolean
+        motivo:
+          type: string
+        boletaId:
+          type: string
+          format: uuid
+        categoria:
+          type: string
+          enum:
+          - GENERAL
+          - VIP
+          - ESTUDIANTE
+          - CORTESIA
+    CompraRequest:
+      type: object
+      properties:
+        eventoId:
+          type: string
+          format: uuid
+        categoria:
+          type: string
+          enum:
+          - GENERAL
+          - VIP
+          - ESTUDIANTE
+          - CORTESIA
+        compradorId:
+          type: string
+          format: uuid
+        nombreComprador:
+          type: string
+          minLength: 1
+        correoComprador:
+          type: string
+          format: email
+          minLength: 1
+        carnetEstudiantil:
+          type: string
+        emitidaPor:
+          type: string
+          format: uuid
+      required:
+      - categoria
+      - compradorId
+      - correoComprador
+      - eventoId
+      - nombreComprador
+    CompraResponse:
+      type: object
+      properties:
+        boletaId:
+          type: string
+          format: uuid
+        eventoId:
+          type: string
+          format: uuid
+        categoria:
+          type: string
+          enum:
+          - GENERAL
+          - VIP
+          - ESTUDIANTE
+          - CORTESIA
+        precioPagado:
+          type: integer
+          format: int64
+        estado:
+          type: string
+          enum:
+          - RESERVADA
+          - ACTIVA
+          - USADA
+          - CANCELADA
+        fechaCompra:
+          type: string
+          format: date-time
+        codigoQr:
+          type: string
+    AforoResponse:
+      type: object
+      properties:
+        eventoId:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        aforoMaximo:
+          type: integer
+          format: int32
+        vendidas:
+          type: integer
+          format: int32
+        porcentajeVendido:
+          type: number
+          format: double
+        alertaEnviada:
+          type: boolean
+        aceptaVentas:
+          type: boolean
+        categorias:
+          type: array
+          items:
+            $ref: "#/components/schemas/Categoria"
+    Categoria:
+      type: object
+      properties:
+        categoria:
+          type: string
+          enum:
+          - GENERAL
+          - VIP
+          - ESTUDIANTE
+          - CORTESIA
+        cupos:
+          type: integer
+          format: int32
+        disponibles:
+          type: integer
+          format: int32
+        vendidas:
+          type: integer
+          format: int32
+        precioBase:
+          type: integer
+          format: int64
+        tipoPrecio:
+          type: string
+          enum:
+          - FIJO
+          - EARLY_BIRD
+          - DINAMICO

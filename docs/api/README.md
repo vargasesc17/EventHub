@@ -2,6 +2,10 @@
 
 Endpoints disponibles para las pantallas del frontend. Todo el JSON va en `camelCase`, las fechas en ISO-8601 UTC (`"2027-06-01T20:00:00Z"`) y los precios en pesos colombianos enteros, sin decimales.
 
+> Documentación interactiva (con los servicios corriendo): Eventos en http://localhost:8081/swagger-ui.html,
+> Boletería en http://localhost:8082/swagger-ui.html. El contrato OpenAPI versionado está en
+> `eventos.openapi.yaml` y `boleteria.openapi.yaml` (se pueden abrir en https://editor.swagger.io).
+
 ## Cómo llamarlos
 
 | Desde | Eventos | Boletería |
