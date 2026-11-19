@@ -170,6 +170,7 @@ export default function FormularioEvento({
             className={inputStyle}
             required
             type="datetime-local"
+            min={fechaLocal(new Date().toISOString())}
             value={fecha}
             onChange={(e) => setFecha(e.target.value)}
           />
