@@ -5,7 +5,7 @@ import Pagina from "../../components/Pagina";
 import EstadoCarga from "../../components/EstadoCarga";
 
 import { obtenerEvento, cambiarEstado } from "../../api/eventos";
-import { obtenerMisEventos } from "../../storage/misEventos";
+import { obtenerMisEventos, olvidarMisEventos } from "../../storage/misEventos";
 import { useSesion } from "../../sesion/Sesion";
 
 const acciones = {
@@ -57,9 +57,8 @@ export default function GestionEventos() {
 
     async function cargar() {
       try {
-        const resultados = await Promise.allSettled(
-          obtenerMisEventos(usuario.id).map(obtenerEvento)
-        );
+        const ids = obtenerMisEventos(usuario.id);
+        const resultados = await Promise.allSettled(ids.map(obtenerEvento));
 
         if (!activo) return;
 
@@ -73,7 +72,23 @@ export default function GestionEventos() {
             .map((r) => r.value)
         );
 
-        if (resultados.some((r) => r.status === "rejected")) {
+        // Un 404 significa que el evento ya no existe (por ejemplo, se borró la base de datos):
+        // se olvida su id. Cualquier otra falla (Eventos caído, red) sí se muestra.
+
+        const inexistentes = ids.filter(
+          (_, i) =>
+            resultados[i].status === "rejected" &&
+            resultados[i].reason?.status === 404
+        );
+        if (inexistentes.length) {
+          olvidarMisEventos(usuario.id, inexistentes);
+        }
+
+        if (
+          resultados.some(
+            (r) => r.status === "rejected" && r.reason?.status !== 404
+          )
+        ) {
           setError({
             detail:
               "Algunos eventos no pudieron consultarse. Sus identificadores siguen guardados.",
