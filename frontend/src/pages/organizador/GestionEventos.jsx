@@ -48,6 +48,7 @@ export default function GestionEventos() {
   const [cargando, setCargando] = useState(true);
   const [ocupado, setOcupado] = useState(false);
   const [detalle, setDetalle] = useState(null);
+  const [aviso, setAviso] = useState("");
 
   // CARGAR LOS EVENTOS DEL ORGANIZADOR
 
@@ -97,13 +98,18 @@ export default function GestionEventos() {
   async function transicion(evento, accion) {
     if (
       accion === "cancelar" &&
-      !window.confirm("¿Cancelar este evento?")
+      !window.confirm(
+        evento.estado === "PUBLICADO"
+          ? "¿Cancelar este evento? Se avisará por correo a todos los compradores."
+          : "¿Cancelar este evento?"
+      )
     ) {
       return;
     }
 
     setOcupado(true);
     setError(null);
+    setAviso("");
 
     try {
       const actualizado = await cambiarEstado(evento.id, accion);
@@ -113,6 +119,18 @@ export default function GestionEventos() {
           e.id === actualizado.id ? actualizado : e
         )
       );
+
+      // CONFIRMACIÓN DE LA CANCELACIÓN
+      // Eventos publica evento.actualizado: Boletería cancela las boletas y Notificaciones
+      // envía el correo a cada comprador. Un borrador no tiene compradores a quienes avisar.
+
+      if (accion === "cancelar") {
+        setAviso(
+          evento.estado === "PUBLICADO"
+            ? `"${evento.nombre}" fue cancelado. Se notificó a los asistentes: cada comprador recibe un correo y sus boletas quedan canceladas.`
+            : `"${evento.nombre}" fue cancelado. Estaba en borrador, así que no había compradores a quienes avisar.`
+        );
+      }
     } catch (e) {
       setError(e);
     } finally {
@@ -124,6 +142,18 @@ export default function GestionEventos() {
     <Pagina titulo="Mis eventos">
 
       <EstadoCarga cargando={cargando} error={error} />
+
+      {/* CONFIRMACIÓN DE ACCIONES */}
+
+      {aviso && (
+        <p
+          role="status"
+          className="mb-6 rounded-[25px] bg-[#e3f7e3] p-5
+          font-inter-semibold text-[#1d6b1d]"
+        >
+          {aviso}
+        </p>
+      )}
 
       {!cargando && !error && !eventos.length && (
         <p className="font-inter-semibold">

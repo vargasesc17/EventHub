@@ -4,6 +4,7 @@ import Pagina from "../../components/Pagina";
 import EstadoCarga from "../../components/EstadoCarga";
 
 import { obtenerEvento } from "../../api/eventos";
+import { obtenerAforo } from "../../api/boleteria";
 import useConsulta from "../../api/useConsulta";
 
 // ESTILO GENERAL DE LOS BOTONES
@@ -45,6 +46,19 @@ export default function DetalleEvento() {
     cargando,
     error,
   } = useConsulta(obtenerEvento, eventoId);
+
+  // DISPONIBILIDAD REAL POR CATEGORÍA (BOLETERÍA)
+  // Solo existe cuando el evento ya se publicó; si no, se muestran los cupos asignados.
+
+  const { datos: aforo } = useConsulta(obtenerAforo, eventoId);
+
+  const disponibles = Object.fromEntries(
+    (aforo?.categorias || []).map((c) => [c.categoria, c.disponibles])
+  );
+
+  const agotado =
+    !!aforo?.categorias?.length &&
+    aforo.categorias.every((c) => c.disponibles === 0);
 
   return (
 
@@ -224,12 +238,35 @@ export default function DetalleEvento() {
 
                   </p>
 
-                  <p className="mt-2 font-inter-semibold
-                    text-[#69529b] text-[15px]">
+                  {disponibles[categoria.tipo] === undefined ? (
 
-                    {categoria.cupos} cupos asignados
+                    <p className="mt-2 font-inter-semibold
+                      text-[#69529b] text-[15px]">
 
-                  </p>
+                      {categoria.cupos} cupos asignados
+
+                    </p>
+
+                  ) : disponibles[categoria.tipo] === 0 ? (
+
+                    <p className="mt-2 inline-block rounded-full
+                      bg-red-100 px-4 py-1
+                      font-inter-bold text-[15px] text-red-700">
+
+                      Agotado
+
+                    </p>
+
+                  ) : (
+
+                    <p className="mt-2 font-inter-semibold
+                      text-[#69529b] text-[15px]">
+
+                      {disponibles[categoria.tipo]} de {categoria.cupos} disponibles
+
+                    </p>
+
+                  )}
 
                   <p className="mt-2 text-[14px]
                     text-gray-500">
@@ -251,7 +288,17 @@ export default function DetalleEvento() {
           <div className="mt-10 flex flex-col
             items-center justify-center">
 
-            {evento.estado === "PUBLICADO" ? (
+            {evento.estado === "PUBLICADO" && agotado ? (
+
+              <p className="rounded-full bg-red-100
+                px-6 py-3 font-inter-semibold
+                text-red-700 text-center">
+
+                Boletas agotadas para este evento.
+
+              </p>
+
+            ) : evento.estado === "PUBLICADO" ? (
 
               <Link
                 to={`/eventos/${evento.id}/comprar`}
