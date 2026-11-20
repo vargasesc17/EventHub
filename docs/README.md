@@ -7,4 +7,3 @@
 | `adr/` | Registro de decisiones de arquitectura (14 ADR) — #13 |
 | `contratos/` | Contratos de los mensajes RabbitMQ: colas, esquemas JSON y ejemplos — #15 |
 | `entrega-final.md` | **Documento final:** objetivo, estilo y stack, C4, requerimientos, 14 ADRs, SOLID, patrones, atributos de calidad, Docker, Git y lecciones aprendidas — #29 |
-| `sustentacion/guion.md` | Guion de la sustentación: C4 y validación funcional de cada ADR, repartido entre Carlos, David y Karol — #31 |
