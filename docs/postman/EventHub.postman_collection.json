@@ -1,0 +1,862 @@
+{
+  "info": {
+    "name": "EventHub · demo",
+    "description": "Peticiones de la demo, en orden. Ejecuta la colección completa con Runner (o de arriba hacia abajo): cada petición guarda en variables lo que necesita la siguiente y tiene pruebas automáticas.\n\nRequisito: `docker compose up -d --build` con todo en healthy. Todas pasan por Nginx (http://localhost:8080/api), igual que el frontend.\n\nLos usuarios son los de la sesión simulada del frontend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base",
+      "value": "http://localhost:8080/api"
+    },
+    {
+      "key": "organizadorId",
+      "value": "a9e2c4b1-6d3f-4a8e-b2c7-1f5d9e3a7c20"
+    },
+    {
+      "key": "compradorId",
+      "value": "e4b7a1c2-9d3e-4f5a-8b6c-7d8e9f0a1b2c"
+    },
+    {
+      "key": "staffId",
+      "value": "11111111-2222-3333-4444-555555555555"
+    },
+    {
+      "key": "eventoId",
+      "value": ""
+    },
+    {
+      "key": "codigoQr",
+      "value": ""
+    },
+    {
+      "key": "boletaId",
+      "value": ""
+    },
+    {
+      "key": "fechaFutura",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Salud de los servicios",
+      "item": [
+        {
+          "name": "Salud de Eventos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:8081/health",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Estado UP\", () => pm.expect(pm.response.json().status).to.eql(\"UP\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Salud de Boletería",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:8082/health",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Estado UP\", () => pm.expect(pm.response.json().status).to.eql(\"UP\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Salud de Notificaciones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:8083/health",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Estado UP\", () => pm.expect(pm.response.json().status).to.eql(\"UP\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Organizador",
+      "item": [
+        {
+          "name": "Crear evento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/eventos",
+            "description": "Crea el evento de la demo con las 4 categorías. Guarda su id en {{eventoId}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Concierto de la demo\",\n  \"lugar\": \"Movistar Arena\",\n  \"fechaInicio\": \"{{fechaFutura}}\",\n  \"aforoMaximo\": 10,\n  \"organizadorId\": \"{{organizadorId}}\",\n  \"organizadorCorreo\": \"organizador@eventhub.test\",\n  \"categorias\": [\n    {\n      \"tipo\": \"GENERAL\",\n      \"cupos\": 5,\n      \"precioBase\": 80000\n    },\n    {\n      \"tipo\": \"VIP\",\n      \"cupos\": 3,\n      \"precioBase\": 250000\n    },\n    {\n      \"tipo\": \"ESTUDIANTE\",\n      \"cupos\": 1,\n      \"precioBase\": 40000\n    },\n    {\n      \"tipo\": \"CORTESIA\",\n      \"cupos\": 1,\n      \"precioBase\": 0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Fecha de inicio: dentro de 30 días (el dominio rechaza fechas pasadas).",
+                  "const f = new Date(Date.now() + 30*24*60*60*1000);",
+                  "pm.collectionVariables.set('fechaFutura', f.toISOString().replace(/\\.\\d{3}Z$/, 'Z'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "const e = pm.response.json();",
+                  "pm.test(\"Nace en BORRADOR\", () => pm.expect(e.estado).to.eql(\"BORRADOR\"));",
+                  "pm.collectionVariables.set(\"eventoId\", e.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear evento en el pasado (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/eventos",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Evento imposible\",\n  \"lugar\": \"Movistar Arena\",\n  \"fechaInicio\": \"2020-01-01T20:00:00Z\",\n  \"aforoMaximo\": 10,\n  \"organizadorId\": \"{{organizadorId}}\",\n  \"organizadorCorreo\": \"organizador@eventhub.test\",\n  \"categorias\": [\n    {\n      \"tipo\": \"GENERAL\",\n      \"cupos\": 10,\n      \"precioBase\": 80000\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Regla de negocio: la fecha debe ser futura\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cortesía con precio (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/eventos",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cortesía cobrada\",\n  \"lugar\": \"Movistar Arena\",\n  \"fechaInicio\": \"{{fechaFutura}}\",\n  \"aforoMaximo\": 10,\n  \"organizadorId\": \"{{organizadorId}}\",\n  \"organizadorCorreo\": \"organizador@eventhub.test\",\n  \"categorias\": [\n    {\n      \"tipo\": \"CORTESIA\",\n      \"cupos\": 10,\n      \"precioBase\": 5000\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Una cortesía no tiene precio\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publicar evento",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{base}}/eventos/{{eventoId}}/publicar",
+            "description": "Publica evento.actualizado: Boletería crea el inventario."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Queda PUBLICADO\", () => pm.expect(pm.response.json().estado).to.eql(\"PUBLICADO\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mis eventos (organizador)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base}}/eventos?organizadorId={{organizadorId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Incluye el evento de la demo\", () => pm.expect(pm.response.json().map(e => e.id)).to.include(pm.collectionVariables.get(\"eventoId\")));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Comprador (Factory Method, Strategy, aforo)",
+      "item": [
+        {
+          "name": "Catálogo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base}}/eventos/catalogo",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"El evento publicado aparece\", () => pm.expect(pm.response.json().map(e => e.id)).to.include(pm.collectionVariables.get(\"eventoId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Aforo inicial (Boletería)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base}}/boleteria/eventos/{{eventoId}}/aforo",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Los mensajes por RabbitMQ son asíncronos: se espera un momento.",
+                  "setTimeout(() => {}, 1500);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Boletería ya conoce el evento (llegó por RabbitMQ)\", () => pm.response.to.have.status(200));",
+                  "const a = pm.response.json();",
+                  "pm.test(\"Nada vendido\", () => pm.expect(a.vendidas).to.eql(0));",
+                  "pm.test(\"4 categorías\", () => pm.expect(a.categorias.length).to.eql(4));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Comprar GENERAL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/boleteria/boletas",
+            "description": "Guarda el QR en {{codigoQr}}. El correo con el QR llega a Mailpit (http://localhost:8025).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventoId\": \"{{eventoId}}\",\n  \"categoria\": \"GENERAL\",\n  \"compradorId\": \"{{compradorId}}\",\n  \"nombreComprador\": \"Karol Esquivel\",\n  \"correoComprador\": \"karolpro@eventhub.test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.test(\"Precio fijo = precio base\", () => pm.expect(b.precioPagado).to.eql(80000));",
+                  "pm.test(\"QR firmado boletaId.firma\", () => pm.expect(b.codigoQr).to.match(/^[0-9a-f-]{36}\\.[A-Za-z0-9_-]{43}$/));",
+                  "pm.collectionVariables.set(\"codigoQr\", b.codigoQr);",
+                  "pm.collectionVariables.set(\"boletaId\", b.boletaId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Comprar VIP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/boleteria/boletas",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventoId\": \"{{eventoId}}\",\n  \"categoria\": \"VIP\",\n  \"compradorId\": \"{{compradorId}}\",\n  \"nombreComprador\": \"Karol Esquivel\",\n  \"correoComprador\": \"karolpro@eventhub.test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Precio VIP\", () => pm.expect(pm.response.json().precioPagado).to.eql(250000));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Comprar ESTUDIANTE sin carnet (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/boleteria/boletas",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventoId\": \"{{eventoId}}\",\n  \"categoria\": \"ESTUDIANTE\",\n  \"compradorId\": \"{{compradorId}}\",\n  \"nombreComprador\": \"Karol Esquivel\",\n  \"correoComprador\": \"karolpro@eventhub.test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"La fábrica de estudiante exige carnet\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Comprar ESTUDIANTE con carnet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/boleteria/boletas",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventoId\": \"{{eventoId}}\",\n  \"categoria\": \"ESTUDIANTE\",\n  \"compradorId\": \"{{compradorId}}\",\n  \"nombreComprador\": \"Karol Esquivel\",\n  \"correoComprador\": \"karolpro@eventhub.test\",\n  \"carnetEstudiantil\": \"000123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Emitir CORTESIA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/boleteria/boletas",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventoId\": \"{{eventoId}}\",\n  \"categoria\": \"CORTESIA\",\n  \"compradorId\": \"{{compradorId}}\",\n  \"nombreComprador\": \"Karol Esquivel\",\n  \"correoComprador\": \"karolpro@eventhub.test\",\n  \"emitidaPor\": \"{{organizadorId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"No se cobra\", () => pm.expect(pm.response.json().precioPagado).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CORTESIA agotada (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/boleteria/boletas",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventoId\": \"{{eventoId}}\",\n  \"categoria\": \"CORTESIA\",\n  \"compradorId\": \"{{compradorId}}\",\n  \"nombreComprador\": \"Karol Esquivel\",\n  \"correoComprador\": \"karolpro@eventhub.test\",\n  \"emitidaPor\": \"{{organizadorId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Sin cupos: la categoría tenía 1\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mis boletas (comprador)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base}}/boleteria/boletas?compradorId={{compradorId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json().filter(b => b.eventoId === pm.collectionVariables.get(\"eventoId\"));",
+                  "pm.test(\"4 boletas del evento\", () => pm.expect(lista.length).to.eql(4));",
+                  "pm.test(\"Todas ACTIVA y con QR\", () => lista.forEach(b => { pm.expect(b.estado).to.eql(\"ACTIVA\"); pm.expect(b.codigoQr).to.be.a(\"string\"); }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Aforo después de las compras",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base}}/boleteria/eventos/{{eventoId}}/aforo",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"4 vendidas\", () => pm.expect(pm.response.json().vendidas).to.eql(4));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Staff: check-in (RNF-03)",
+      "item": [
+        {
+          "name": "Check-in en la entrada de OTRO evento (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/boleteria/checkin",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoQr\": \"{{codigoQr}}\",\n  \"eventoId\": \"00000000-0000-0000-0000-000000000000\",\n  \"staffId\": \"{{staffId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Motivo: otro evento\", () => pm.expect(pm.response.json().motivo).to.eql(\"La boleta es de otro evento\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Check-in correcto (200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/boleteria/checkin",
+            "description": "La boleta no se gastó en el intento anterior: aquí sí entra.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoQr\": \"{{codigoQr}}\",\n  \"eventoId\": \"{{eventoId}}\",\n  \"staffId\": \"{{staffId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Aceptado\", () => pm.expect(pm.response.json().aceptado).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Check-in repetido (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/boleteria/checkin",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoQr\": \"{{codigoQr}}\",\n  \"eventoId\": \"{{eventoId}}\",\n  \"staffId\": \"{{staffId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Motivo: ya usada\", () => pm.expect(pm.response.json().motivo).to.eql(\"La boleta ya fue usada\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Check-in con QR alterado (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/boleteria/checkin",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoQr\": \"{{codigoQr}}X\",\n  \"eventoId\": \"{{eventoId}}\",\n  \"staffId\": \"{{staffId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Firma inválida\", () => pm.expect(pm.response.json().motivo).to.include(\"QR inválido\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Cambios del evento (Observer por RabbitMQ)",
+      "item": [
+        {
+          "name": "Reprogramar: cambiar el lugar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/eventos/{{eventoId}}",
+            "description": "Notificaciones envía un correo a cada comprador con el lugar anterior y el nuevo (ver Mailpit).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lugar\": \"Coliseo El Campín\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Lugar nuevo\", () => pm.expect(pm.response.json().lugar).to.eql(\"Coliseo El Campín\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar evento",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{base}}/eventos/{{eventoId}}/cancelar",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Queda CANCELADO\", () => pm.expect(pm.response.json().estado).to.eql(\"CANCELADO\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mis boletas tras la cancelación",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base}}/boleteria/boletas?compradorId={{compradorId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Los mensajes por RabbitMQ son asíncronos: se espera un momento.",
+                  "setTimeout(() => {}, 1500);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json().filter(b => b.eventoId === pm.collectionVariables.get(\"eventoId\"));",
+                  "pm.test(\"La usada sigue USADA y las demás quedan CANCELADA\", () => lista.forEach(b =>",
+                  "  pm.expect(b.estado).to.eql(b.boletaId === pm.collectionVariables.get(\"boletaId\") ? \"USADA\" : \"CANCELADA\")));",
+                  "pm.test(\"Ninguna trae QR\", () => lista.forEach(b => pm.expect(b.codigoQr).to.be.null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Comprar en evento cancelado (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base}}/boleteria/boletas",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventoId\": \"{{eventoId}}\",\n  \"categoria\": \"GENERAL\",\n  \"compradorId\": \"{{compradorId}}\",\n  \"nombreComprador\": \"Karol Esquivel\",\n  \"correoComprador\": \"karolpro@eventhub.test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"El evento ya no está a la venta\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
