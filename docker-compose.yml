@@ -1,10 +1,17 @@
-# Ambiente local de EventHub (#8)
-# Levantar:  docker compose up -d
+# EventHub: todo el sistema con un solo comando
+# Levantar:  docker compose up -d --build
 # Apagar:    docker compose down        (agrega -v para borrar también los datos)
 #
-# Microservicios incluidos: Eventos (#16), Boletería (#17) y Notificaciones (#18).
-# Mailpit (#25) atrapa los correos de prueba: http://localhost:8025
-# El frontend se agrega en su propio issue (#38).
+# Redes propias (no se usa la red por defecto de Docker). Cada contenedor solo ve lo que necesita:
+#   eventhub_frontend    Nginx ↔ Eventos y Boletería (la aplicación web no ve la base ni el broker)
+#   eventhub_mensajeria  los tres microservicios ↔ RabbitMQ
+#   eventhub_datos       los tres microservicios ↔ PostgreSQL (cada uno con su usuario y su base, ADR-0002)
+#   eventhub_correo      Notificaciones ↔ Mailpit
+#
+# Puertos publicados en el equipo (todos para desarrollo y demo; en producción solo quedaría el 8080):
+#   8080 aplicación web · 8081/8082/8083 APIs y /health de cada servicio (Swagger en 8081 y 8082)
+#   15672 panel de RabbitMQ · 5672 AMQP y 5432 PostgreSQL (para inspeccionar desde el equipo)
+#   8025 bandeja de Mailpit · 1025 SMTP de Mailpit
 
 services:
   rabbitmq:
@@ -18,6 +25,7 @@ services:
       - "15672:15672"   # Panel de administración: http://localhost:15672
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq   # las colas durables sobreviven a un reinicio (ADR-0001)
+    networks: [mensajeria]
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
@@ -41,6 +49,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks: [datos]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_ADMIN_USER}"]
       interval: 10s
@@ -50,6 +59,7 @@ services:
   eventos:
     build: ./services/eventos
     container_name: eventhub-eventos
+    networks: [frontend, mensajeria, datos]
     environment:
       EVENTOS_DB_USER: ${EVENTOS_DB_USER}
       EVENTOS_DB_PASSWORD: ${EVENTOS_DB_PASSWORD}
@@ -74,6 +84,7 @@ services:
   boleteria:
     build: ./services/boleteria
     container_name: eventhub-boleteria
+    networks: [frontend, mensajeria, datos]
     environment:
       BOLETERIA_DB_USER: ${BOLETERIA_DB_USER}
       BOLETERIA_DB_PASSWORD: ${BOLETERIA_DB_PASSWORD}
@@ -99,6 +110,7 @@ services:
   notificaciones:
     build: ./services/notificaciones
     container_name: eventhub-notificaciones
+    networks: [mensajeria, datos, correo]
     environment:
       NOTIFICACIONES_DB_USER: ${NOTIFICACIONES_DB_USER}
       NOTIFICACIONES_DB_PASSWORD: ${NOTIFICACIONES_DB_PASSWORD}
@@ -116,7 +128,7 @@ services:
       rabbitmq:
         condition: service_healthy
       mailpit:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
       interval: 10s
@@ -127,20 +139,44 @@ services:
   # Servidor de correo falso: atrapa los correos de Notificaciones para verlos en el navegador
   # (http://localhost:8025). No envía nada de verdad (#25).
   mailpit:
-    image: axllent/mailpit:latest
+    image: axllent/mailpit:v1.33.0
     container_name: eventhub-mailpit
+    networks: [correo]
     ports:
       - "8025:8025"   # página web para ver los correos
       - "1025:1025"   # SMTP: aquí envía Notificaciones
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   frontend:
     build: ./frontend
     container_name: eventhub-frontend
+    networks: [frontend]
     ports:
-      - "8080:80"
+      - "8080:80"     # único punto de entrada de la aplicación (ADR-0005)
     depends_on:
-      - eventos
-      - boleteria
+      eventos:
+        condition: service_healthy
+      boleteria:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  frontend:
+    name: eventhub_frontend
+  mensajeria:
+    name: eventhub_mensajeria
+  datos:
+    name: eventhub_datos
+  correo:
+    name: eventhub_correo
 
 volumes:
   rabbitmq_data:
