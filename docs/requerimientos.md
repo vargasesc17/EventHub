@@ -1,6 +1,6 @@
 # Requerimientos de EventHub
 
-**Estado:** Propuesto, pendiente de revisión de Carlos, David y Karol (#10)
+**Estado:** Aceptado (PR #47). El estado de implementación de cada requerimiento está en [`entrega-final.md`](entrega-final.md#6-requerimientos-y-reglas-de-negocio).
 
 Este documento define los 10 requerimientos del sistema: 6 funcionales (RF) y 4 no funcionales (RNF). Los ADRs (`docs/adr/`) y el diagrama de clases se justifican a partir de ellos. Los nombres de contenedores corresponden al diagrama C4 de Contenedores (`docs/diagramas/c2-contenedores.svg`).
 

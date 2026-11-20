@@ -4,6 +4,7 @@
 |---|---|
 | `requerimientos.md` | Los 10 requerimientos (RF y RNF) con trazabilidad al C4 — #10 |
 | `diagramas/` | C4 nivel 1 (Contexto) y nivel 2 (Contenedores) |
-| `adr/` | Registro de decisiones de arquitectura — #13 |
+| `adr/` | Registro de decisiones de arquitectura (14 ADR) — #13 |
 | `contratos/` | Contratos de los mensajes RabbitMQ: colas, esquemas JSON y ejemplos — #15 |
-| `entrega-final.md` | **Documento final:** C4, requerimientos, ADRs, SOLID, patrones y atributos de calidad con evidencia — #29 |
+| `entrega-final.md` | **Documento final:** objetivo, estilo y stack, C4, requerimientos, 14 ADRs, SOLID, patrones, atributos de calidad, Docker, Git y lecciones aprendidas — #29 |
+| `sustentacion/guion.md` | Guion de la sustentación: C4 y validación funcional de cada ADR, repartido entre Carlos, David y Karol — #31 |
