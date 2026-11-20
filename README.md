@@ -64,7 +64,7 @@ Navegador ──► Nginx :8080 ──┬─► /api/eventos    ──► Evento
 
 ## 4. Usar la aplicación
 
-Entra a http://localhost:8080. La autenticación es **simulada** (JWT era una bonificación opcional): eliges con qué usuario entrar.
+Entra a http://localhost:8080. La autenticación es **simulada**: eliges con qué usuario entrar.
 
 | Usuario | Rol | Qué puede hacer |
 |---|---|---|
